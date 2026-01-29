@@ -208,14 +208,11 @@ rule preprocessOccupantsFirstWorkload {
 	}
 	
 	s : Shift {
-		- room -> r
 		// Explicitly delete both edges
 		// (Maybe deleting one is sufficient)
 		-- - derivedWorkloads -> w
 		++ - virtualWorkload -> vnew
 	}
-	
-	r : Room
 	
 	++ vnew : VirtualShiftToWorkload {
 		++ - workload -> w
@@ -247,14 +244,11 @@ rule preprocessOccupantsWorkload {
 	}
 	
 	s : Shift {
-		- room -> r
 		// Explicitly delete both edges
 		// (Maybe deleting one is sufficient)
 		-- - derivedWorkloads -> w
 		++ - virtualWorkload -> vnew
 	}
-	
-	r : Room
 	
 	++ vnew : VirtualShiftToWorkload {
 		++ - workload -> w
