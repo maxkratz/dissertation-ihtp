@@ -26,20 +26,7 @@ condition noVirtualShiftToRoster = forbid findVirtualShiftToRoster
 // shift and a specific roster. There must not be an existing
 // virtual shift to roster object connecting those two.
 rule assignNurseToRoomVirtual_preproc {
-	root: Root {
-		-nurses -> nurse
-		-rooms -> room
-	}
-
-	nurse: Nurse {
-		-rosters -> roster
-	}
-
 	roster: Roster
-
-	room: Room {
-		-shifts -> shift
-	}
 
 	shift: Shift {
 		++ - virtualRoster -> vnew
