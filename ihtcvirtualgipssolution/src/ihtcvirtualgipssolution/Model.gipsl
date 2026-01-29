@@ -16,15 +16,6 @@ config {
 
 // PRA.1: Rule that selects a `VirtualShiftToWorkload` node to be adopted in the final model.
 rule selectShiftToFirstWorkload_select {
-	p : Patient {
-		- firstWorkload -> w
-	}
-
-	w : Workload {
-		- virtualShift -> vsw
-		- virtualCapacity -> vwc
-	}
-
 	vwc : VirtualWorkloadToCapacity
 
 	vsw : VirtualShiftToWorkload {
@@ -380,7 +371,7 @@ constraint with otCapacityTuple {
 // H5: Mandatory versus optional patients: All mandatory patients must be admitted within the
 // scheduling period, whereas optional patients may be postponed to future scheduling periods.
 constraint with mandatoryPatients {
-	mappings.selectedShiftToFirstWorkload->filter(element.nodes.p == context.nodes.p)->sum(element.value) == 1
+	mappings.selectedShiftToFirstWorkload->filter(element.nodes.vsw.workload.patient == context.nodes.p)->sum(element.value) == 1
 	&
 	mappings.selectedOperationDay->filter(element.nodes.p == context.nodes.p)->sum(element.value) == 1
 }
@@ -472,7 +463,7 @@ constraint with Patient {
 
 // C7: A patient cannot be assigned to more than one "first" shift
 constraint with Patient {
-	mappings.selectedShiftToFirstWorkload->filter(element.nodes.p == context)->sum(element.value) <= 1
+	mappings.selectedShiftToFirstWorkload->filter(element.nodes.vsw.workload.patient == context)->sum(element.value) <= 1
 }
 
 //
@@ -779,14 +770,14 @@ constraint with otsPerSurgeon {
 
 // S7: The number of days between a patient´s release date and their actual date of admission should be minimized
 function calculateWaitTime with selectedShiftToFirstWorkload {
-	((context.nodes.vsw.shift.shiftNo / 3) - context.nodes.p.earliestDay) * context.value
+	((context.nodes.vsw.shift.shiftNo / 3) - context.nodes.vsw.workload.patient.earliestDay) * context.value
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
 
 // S8: The number of not admitted optional patients should be minimized
 function calculateNotAssignedOptionalPatients with optionalPatients {
-	1 - mappings.selectedShiftToFirstWorkload->filter(element.nodes.p == context.nodes.p)->sum(element.value)
+	1 - mappings.selectedShiftToFirstWorkload->filter(element.nodes.vsw.workload.patient == context.nodes.p)->sum(element.value)
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
