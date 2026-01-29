@@ -124,14 +124,14 @@ public class PreprocessingGtApp extends IhtcvirtualpreprocessingHiPEApp {
 
 		// Apply all GT rule matches until the specified limit hits
 		// New GT rules (that should be applied) must be added here
-		applyMatches(api.preprocessOccupantsFirstWorkload(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.preprocessOccupantsWorkload(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.assignNurseToRoom(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.assignSurgeonToOt(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.fixOperationDayOpTime(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.fixOperationDayCapacity(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.assignPatientToRoom(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.extendPatientStay(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.occupantsFirstWorkloadVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.extendOccupantsStayVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.assignNurseToRoomVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.assignSurgeonToOtVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.fixOperationDayOpTimeVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.fixOperationDayCapacityVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.assignPatientToRoomVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.extendPatientStayVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
 
 		// Persist model to XMI path
 		try {

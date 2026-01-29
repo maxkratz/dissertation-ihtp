@@ -10,7 +10,7 @@ import "platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore
 
 // Finds an existing virtual roster shift object for a specific
 // roster and a specific shift.
-pattern findVirtualRoster {
+pattern findVirtualShiftToRoster {
 	roster: Roster
 
 	shift: Shift
@@ -20,12 +20,12 @@ pattern findVirtualRoster {
 		-shift -> shift
 	}
 }
-condition noVirtualRoster = forbid findVirtualRoster
+condition noVirtualShiftToRoster = forbid findVirtualShiftToRoster
 
 // Create a new virtual shift to roster object for a specific
 // shift and a specific roster. There must not be an existing
 // virtual shift to roster object connecting those two.
-rule assignNurseToRoom {
+rule assignNurseToRoomVirtual_preproc {
 	root: Root {
 		-nurses -> nurse
 		-rooms -> room
@@ -53,7 +53,7 @@ rule assignNurseToRoom {
 	
 	# roster.shiftNo == shift.shiftNo
 }
-when noVirtualRoster
+when noVirtualShiftToRoster
 
 //
 // Pre-processing for all first virtual elements between `Shift` and `Workload`
@@ -81,11 +81,10 @@ pattern incompatibleRoomForPatient {
 	r : Room
 }
 condition compatibleRoomForPatient = forbid incompatibleRoomForPatient
-
 condition compatibleRoomAndNotAssigned = compatibleRoomForPatient && patientFirstShiftIsNotAssigned
 
 // Pattern that creates a Virtual Node between Shift and Workload to assign a patient to a room 
-rule assignPatientToRoom {
+rule assignPatientToRoomVirtual_preproc {
 	p : Patient {
 		- firstWorkload -> w
 	}
@@ -152,7 +151,7 @@ pattern nextVirtualShiftToWorkloadExists {
 }
 condition nextVirtualShiftToWorkloadDoesNotExist = forbid nextVirtualShiftToWorkloadExists
 
-rule extendPatientStay {
+rule extendPatientStayVirtual_preproc {
 	p : Patient {
 		- workloads -> prevw
 	}
@@ -198,7 +197,7 @@ when nextVirtualShiftToWorkloadDoesNotExist
 // Pre-processing for existing (non-virtual) edges between `Shift` and `Workload`
 //
 
-rule preprocessOccupantsFirstWorkload {
+rule occupantsFirstWorkloadVirtual_preproc {
 	p : Patient {
 		- firstWorkload -> w
 	}
@@ -224,7 +223,7 @@ rule preprocessOccupantsFirstWorkload {
 	# p.isOccupant == true
 }
 
-rule preprocessOccupantsWorkload {
+rule extendOccupantsStayVirtual_preproc {
 	p : Patient {
 		- workloads -> w
 	}
@@ -276,7 +275,7 @@ pattern findVirtualOpTimeToCapacity {
 }
 condition noOpTimeToCapacity = forbid findVirtualOpTimeToCapacity
 
-rule assignSurgeonToOt {
+rule assignSurgeonToOtVirtual_preproc {
 	op : OpTime
 	
 	c : Capacity {
@@ -321,7 +320,7 @@ pattern findVirtualWorkloadToCapacity {
 }
 condition noVirtualEdgeWorkloadToCapacity = forbid findVirtualWorkloadToCapacity
 
-rule fixOperationDayOpTime {
+rule fixOperationDayOpTimeVirtual_preproc {
 	p : Patient {
 		- firstWorkload -> w
 		- surgeon -> s
@@ -358,7 +357,7 @@ rule fixOperationDayOpTime {
 }
 when noVirtualEdgeWorkloadToOpTime
 
-rule fixOperationDayCapacity {
+rule fixOperationDayCapacityVirtual_preproc {
 	c : Capacity {
 		- virtualOpTime -> vop
 		++ - virtualWorkload -> vnew2
