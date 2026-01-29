@@ -15,7 +15,7 @@ config {
 //
 
 // PRA.1: Rule that selects a `VirtualShiftToWorkload` node to be adopted in the final model.
-rule selectShiftToFirstWorkload {
+rule selectShiftToFirstWorkload_select {
 	p : Patient {
 		- firstWorkload -> w
 	}
@@ -34,7 +34,7 @@ rule selectShiftToFirstWorkload {
 }
 
 // PRA.2: Rule that selects an extending `VirtualShiftToWorkload` node to be adopted in the final model.
-rule selectExtendingShiftToFirstWorkload {
+rule selectExtendingShift_select {
 	prevvsw : VirtualShiftToWorkload {
 		- enables_virtualShiftToWorkload -> nextvsw
 	}
@@ -46,7 +46,7 @@ rule selectExtendingShiftToFirstWorkload {
 }
 
 // PRA.3: Rule that selects all `VirtualShiftToWorkload` nodes to be adopted in the final model if they were imported (belong to an occupant).
-rule virtualNodesForOccupant {
+rule selectShiftToWorkloadOccupant_select {
 	vsw : VirtualShiftToWorkload {
 		.isSelected := true
 	}
@@ -57,7 +57,7 @@ rule virtualNodesForOccupant {
 // That includes three edges to be adopted in the final model.
 // I. + II.: between the patient and opTime and between patient and capacity -> Selects a day and OT for the patient
 // III.: between opTime and Capacity to make sure the predefined surgeon of the patient is working in the correct OT on that day
-rule selectOperationDay {
+rule selectOperationDay_select {
 	p : Patient {
 		- firstWorkload -> w
 		- surgeon -> s
@@ -97,7 +97,7 @@ rule selectOperationDay {
 }
 
 // NPA: Rule that selects a `VirtualShiftToRoster` node to be adopted in the final model.
-rule selectShiftToRoster {
+rule selectShiftToRoster_select {
 	vsr : VirtualShiftToRoster {
 		.isSelected := true
 	}
@@ -252,20 +252,20 @@ pattern nursePatientTuple {
 //
 
 // PRA.1: Decides in which room a patient is admitted -> Connects the first workload to a shift
-mapping selectedShiftToFirstWorkload to selectShiftToFirstWorkload;
+mapping selectedShiftToFirstWorkload to selectShiftToFirstWorkload_select;
 
 // PRA.2: Decides which following shifts are assigned to a patient (dependent on the room that was assigned to the first workload)
 // -> Connects all following workloads to a shift (The room is always the same and equal to the one selected in selectedShiftToFirstWorkload)
-mapping selectedExtendingShiftToFirstWorkload to selectExtendingShiftToFirstWorkload;
+mapping selectedExtendingShiftToFirstWorkload to selectExtendingShift_select;
 
 // PRA.3: Adds all imported virtual nodes of occupants to the model
-mapping selectedOccupantNodes to virtualNodesForOccupant;
+mapping selectedOccupantNodes to selectShiftToWorkloadOccupant_select;
 
 // NPA: Decides on what day and in which OT a patient is operated on.
-mapping selectedOperationDay to selectOperationDay;
+mapping selectedOperationDay to selectOperationDay_select;
 
 // SCP.1-3: Decides which nurses are assigned to a shift/room on a specific day.
-mapping selectedShiftToRoster to selectShiftToRoster;
+mapping selectedShiftToRoster to selectShiftToRoster_select;
 
 //
 // Utility Mappings
@@ -486,7 +486,7 @@ constraint with selectedOccupantNodes {
 
 // V2.1: The virtual node `VirtualWorkloadToShift` can only be added to the final model if
 // the required node `VirtualWorkloadToCapacity` is also selected (`isSelected = true`)
-constraint with selectShiftToFirstWorkload {
+constraint with selectShiftToFirstWorkload_select {
 	mappings.selectedShiftToFirstWorkload->filter(
 		element.nodes.vsw == context.nodes.vsw &
 		element.nodes.vwc == context.nodes.vwc
@@ -514,7 +514,7 @@ constraint with selectedOperationDay {
 // V3: The stay of a patient can be extended by selecting a following node `VirtualWorkloadToShift`
 // that is connected to the previous links between the patients workloads to shifts.
 // The following node can only be selected if the previous is already set to true.
-constraint with selectExtendingShiftToFirstWorkload {
+constraint with selectExtendingShift_select {
 	mappings.selectedExtendingShiftToFirstWorkload->filter(
 		element.nodes.nextvsw == context.nodes.nextvsw
 	)->sum(element.value) == 1
