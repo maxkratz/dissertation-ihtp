@@ -101,11 +101,6 @@ pattern optionalPatient {
 // Used for a mapping which counts the patients over a specific room for a specific day -> enforce that the capacity of a room is not exceeded
 // Additionally used to make sure nurses are not assigned to empty rooms and each non-empty room has an assigned nurse
 pattern earlyShift {
-//	r : Room {
-//		- shifts -> s
-//	}
-	// ^the respective room is not necessary
-	
 	s : Shift
 	# s.shiftNo % 3 == 0
 }
@@ -115,24 +110,7 @@ pattern earlyShift {
 //
 // This pattern is necessary because GIPSL does not allow to specify mappings on types.
 pattern virtualShiftToWorkload {
-	// All nodes commented out are not necessary
-	
-//	p : Patient {
-//		- workloads -> w
-//	}
-
-//	s : Shift
-//
-//	w : Workload
-
-	vsw : VirtualShiftToWorkload {
-//		- shift -> s
-//		- workload -> w
-	}
-
-//	r : Room {
-//		- shifts -> s
-//	}
+	vsw : VirtualShiftToWorkload
 }
 
 // Pattern used in a mapping to save the information if an OT is used on a specific day and used to make sure the capacity of an OT is not exceeded on each day
@@ -140,11 +118,6 @@ pattern virtualShiftToWorkload {
 //
 // This pattern is necessary because GIPSL does not allow to specify mappings on types.
 pattern capacity {
-//	ot : OT {
-//		- capacities -> c
-//	}
-	// ^the respective OT is not necessary
-
 	c : Capacity
 //	# c.maxCapacity > 0
 }
@@ -154,11 +127,6 @@ pattern capacity {
 //
 // This pattern is necessary because GIPSL does not allow to specify mappings on types.
 pattern opTime {
-//	s : Surgeon {
-//		- opTimes -> op
-//	}
-	// ^the respective surgeon is not needed
-
 	op : OpTime
 //	# op.maxOpTime > 0
 }
@@ -168,11 +136,6 @@ pattern opTime {
 pattern genderEarlyShift {
 	g : Gender
 
-//	r : Room {
-//		- shifts -> s
-//	}
-	// ^the room is covered indirectly via the respective Shift object
-
 	s : Shift
 	# s.shiftNo % 3 == 0
 }
@@ -181,23 +144,12 @@ pattern genderEarlyShift {
 //
 // This pattern is necessary because GIPSL does not allow to specify mappings on types.
 pattern roster {
-//	n : Nurse {
-//		- rosters -> ro
-//	}
-	// ^the respective nurse is not needed
-
 	ro : Roster
 }
 
 // Used in a mapping to save the information if a surgeon is operating in a specific OT for each day
 pattern opTimeOtTuple {
-//	s : Surgeon {
-//		- opTimes -> op
-//	}
-	// ^the respective surgeon is not needed
-
 	op : OpTime
-
 	ot : OT
 }
 
