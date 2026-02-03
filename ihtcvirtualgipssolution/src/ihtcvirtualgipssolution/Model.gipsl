@@ -100,6 +100,12 @@ pattern optionalPatient {
 // Pattern used to map which rooms are occupied on a specific shift.
 // Used for a mapping which counts the patients over a specific room for a specific day -> enforce that the capacity of a room is not exceeded
 // Additionally used to make sure nurses are not assigned to empty rooms and each non-empty room has an assigned nurse
+pattern shift {
+	s : Shift
+}
+
+// Pattern used in hard constraint H1 to make sure the capacity of a room is not exceeded.
+// This must only be ensured for each early shift
 pattern earlyShift {
 	s : Shift
 	# s.shiftNo % 3 == 0
@@ -216,7 +222,7 @@ mapping selectedShiftToRoster to selectShiftToRoster_select;
 
 // Mapping that holds the information how many patients are assigned to a room on a specific day
 // `patientCount`: Amount of patients that are assigned to a room in a specific shift
-mapping countPatientsForRoom to earlyShift {
+mapping countPatientsForRoom to shift {
 	var patientCount : EInt
 };
 
@@ -352,38 +358,17 @@ constraint with countPatientsForRoom {
 	// If the patient count is greater than 0 there has to be at least one nurse assigned for each shift on that day and vice versa
 	context.variables.patientCount >= 1
 	<=>
-	[
-		mappings.selectedShiftToRoster->filter(
-		    element.nodes.vsr.shift == context.nodes.s
-		)->sum(element.value) == 1
-		&
-		mappings.selectedShiftToRoster->filter(
-		 	element.nodes.vsr.shift.room == context.nodes.s.room &
-		    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 1
-		)->sum(element.value) == 1
-		&
-		mappings.selectedShiftToRoster->filter(
-		 	element.nodes.vsr.shift.room == context.nodes.s.room &
-		    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 2
-		)->sum(element.value) == 1
-	]
+	
+	mappings.selectedShiftToRoster->filter(
+		element.nodes.vsr.shift == context.nodes.s
+	)->sum(element.value) == 1
 
 	&
 
   	// A maximum of 1 nurse can be assigned to a room in a shift
   	mappings.selectedShiftToRoster->filter(
-	    element.nodes.vsr.shift == context.nodes.s
-	 )->sum(element.value) <= 1
-	&
-	mappings.selectedShiftToRoster->filter(
-	 	element.nodes.vsr.shift.room == context.nodes.s.room &
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 1
-	)->sum(element.value) <= 1
-	&
-	mappings.selectedShiftToRoster->filter(
-	 	element.nodes.vsr.shift.room == context.nodes.s.room &
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 2
-	)->sum(element.value) <= 1
+  		element.nodes.vsr.shift == context.nodes.s
+  	)->sum(element.value) <= 1
 }
 
 //
