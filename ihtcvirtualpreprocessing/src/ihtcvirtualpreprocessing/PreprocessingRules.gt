@@ -158,15 +158,11 @@ rule extendPatientStayVirtual_preproc {
 	
 	prevs : Shift {
 		- next -> nexts
-		- room -> r
 	}
 	
 	nexts : Shift {
-		- room -> r
 		++ - virtualWorkload -> vnew
 	}
-	
-	r : Room
 	
 	++ vnew : VirtualShiftToWorkload {
 		++ - workload -> nextw
