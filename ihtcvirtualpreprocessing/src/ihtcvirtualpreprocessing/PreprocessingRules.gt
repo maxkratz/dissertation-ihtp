@@ -47,7 +47,7 @@ when noVirtualShiftToRoster
 //
 
 // Pattern to find assigned first Shifts for Patients
-pattern patientFirstShiftIsAssigned {
+pattern patientShiftIsAssigned {
 	w : Workload 
 	
 	vsw : VirtualShiftToWorkload {
@@ -57,7 +57,7 @@ pattern patientFirstShiftIsAssigned {
 	
 	s : Shift 
 }
-condition patientFirstShiftIsNotAssigned = forbid patientFirstShiftIsAssigned
+condition patientShiftIsNotAssigned = forbid patientShiftIsAssigned
 
 // Pattern that finds incompatible rooms for patients
 pattern incompatibleRoomForPatient {
@@ -68,7 +68,7 @@ pattern incompatibleRoomForPatient {
 	r : Room
 }
 condition compatibleRoomForPatient = forbid incompatibleRoomForPatient
-condition compatibleRoomAndNotAssigned = compatibleRoomForPatient && patientFirstShiftIsNotAssigned
+condition compatibleRoomAndNotAssigned = compatibleRoomForPatient && patientShiftIsNotAssigned
 
 // Pattern that creates a Virtual Node between Shift and Workload to assign a patient to a room 
 rule assignPatientToRoomVirtual_preproc {
