@@ -1,4 +1,5 @@
-import "platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
+import
+	"platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
 
 //
 // Remove objects of the type `VirtualShiftToWorkload`

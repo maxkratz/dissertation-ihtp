@@ -1,7 +1,8 @@
-import "platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
+import
+	"platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
 
 //
-// Pre-processing for all virtual elements between `Roster` and `Shift`
+// Preprocessing for all virtual elements between `Roster` and `Shift`
 //
 
 // Finds an existing virtual roster shift object for a specific
@@ -39,7 +40,8 @@ rule assignNurseToRoomVirtual_preproc {
 when noVirtualShiftToRoster
 
 //
-// Pre-processing for all first virtual elements between `Shift` and `Workload`
+// Preprocessing for all first virtual elements between `Shift` and
+// `Workload`
 //
 
 // Pattern to find assigned first Shifts for Patients
@@ -64,9 +66,11 @@ pattern incompatibleRoomForPatient {
 	r : Room
 }
 condition compatibleRoomForPatient = forbid incompatibleRoomForPatient
-condition compatibleRoomAndNotAssigned = compatibleRoomForPatient && patientShiftIsNotAssigned
+condition compatibleRoomAndNotAssigned =
+	compatibleRoomForPatient && patientShiftIsNotAssigned
 
-// Pattern that creates a Virtual Node between Shift and Workload to assign a patient to a room 
+// Pattern that creates a Virtual Node between Shift and Workload to assign a
+// patient to a room
 rule assignPatientToRoomVirtual_preproc {
 	p : Patient {
 		- firstWorkload -> w
@@ -120,7 +124,8 @@ rule assignPatientToRoomVirtual_preproc {
 when compatibleRoomAndNotAssigned
 
 //
-// Pre-processing for succeeding first virtual elements between `Shift` and `Workload`
+// Preprocessing for succeeding first virtual elements between `Shift` and
+// `Workload`
 //
 
 pattern nextVirtualShiftToWorkloadExists {
@@ -132,7 +137,8 @@ pattern nextVirtualShiftToWorkloadExists {
 		- shift -> nexts
 	}
 }
-condition nextVirtualShiftToWorkloadDoesNotExist = forbid nextVirtualShiftToWorkloadExists
+condition nextVirtualShiftToWorkloadDoesNotExist =
+	forbid nextVirtualShiftToWorkloadExists
 
 rule extendPatientStayVirtual_preproc {
 	p : Patient {
@@ -173,7 +179,8 @@ rule extendPatientStayVirtual_preproc {
 when nextVirtualShiftToWorkloadDoesNotExist
 
 //
-// Pre-processing for existing (non-virtual) edges between `Shift` and `Workload`
+// Preprocessing for existing (non-virtual) edges between `Shift` and
+// `Workload`
 //
 
 rule occupantsFirstWorkloadVirtual_preproc {
@@ -238,7 +245,7 @@ rule extendOccupantsStayVirtual_preproc {
 }
 
 //
-// Pre-processing for surgeon and operating theaters
+// Preprocessing for surgeon and operating theaters
 //
 
 pattern findVirtualOpTimeToCapacity {
@@ -272,7 +279,7 @@ rule assignSurgeonToOtVirtual_preproc {
 when noOpTimeToCapacity
 
 //
-// Pre-processing for workloads, OP time, and capacity
+// Preprocessing for workloads, OP time, and capacity
 //
 
 pattern findVirtualWorkloadToOpTime {
@@ -295,7 +302,8 @@ pattern findVirtualWorkloadToCapacity {
 		- workload -> w
 	}
 }
-condition noVirtualEdgeWorkloadToCapacity = forbid findVirtualWorkloadToCapacity
+condition noVirtualEdgeWorkloadToCapacity =
+	forbid findVirtualWorkloadToCapacity
 
 rule fixOperationDayOpTimeVirtual_preproc {
 	p : Patient {
