@@ -18,7 +18,9 @@ config {
 // PRA.1: Rule that selects a `VirtualShiftToWorkload` node to be adopted in
 // the final model.
 rule selectShiftToFirstWorkload_select {
-	vwc : VirtualWorkloadToCapacity
+	vwc : VirtualWorkloadToCapacity {
+		- enables_virtualShiftToWorkload -> vsw
+	}
 
 	vsw : VirtualShiftToWorkload {
 		- requires_virtualWorkloadToCapacity -> vwc
