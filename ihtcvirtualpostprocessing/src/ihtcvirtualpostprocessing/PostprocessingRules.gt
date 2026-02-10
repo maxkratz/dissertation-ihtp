@@ -1,11 +1,9 @@
 import "platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
 
 //
-// GT rules for the post-processing of a (virtual) model
-//
-//
 // Remove objects of the type `VirtualShiftToWorkload`
 //
+
 rule virtualShiftToWorkload_to_derived {
 	-- v: VirtualShiftToWorkload {
 		---shift -> s
@@ -20,7 +18,7 @@ rule virtualShiftToWorkload_to_derived {
 		++ -derivedShift -> s
 	// Explicitly set the opposite edge
 	}
-	
+
 	# v.isSelected == true
 }
 
@@ -32,6 +30,7 @@ rule removeVirtualShiftToWorkload {
 //
 // Remove objects of the type `VirtualShiftToRoster`
 //
+
 rule virtualShiftToRoster_to_derived {
 	-- v: VirtualShiftToRoster {
 		---shift -> s
@@ -46,19 +45,20 @@ rule virtualShiftToRoster_to_derived {
 		++ -derivedShifts -> s
 	// Explicitly set the opposite edge
 	}
-	
+
 	# v.isSelected == true
 }
 
 rule removeVirtualShiftToRoster {
 	-- v: VirtualShiftToRoster
-	
+
 	# v.isSelected == false
 }
 
 //
 // Remove objects of the type `VirtualWorkloadToOpTime`
 //
+
 rule virtualWorkloadToOpTime_to_derived {
 	-- v: VirtualWorkloadToOpTime {
 		---workload -> w
@@ -73,19 +73,20 @@ rule virtualWorkloadToOpTime_to_derived {
 		++ -derivedWorkloads -> w
 	// Explicitly set the opposite edge
 	}
-	
+
 	# v.isSelected == true
 }
 
 rule removeVirtualWorkloadToOpTime {
 	-- v: VirtualWorkloadToOpTime
-	
+
 	# v.isSelected == false
 }
 
 //
 // Remove objects of the type `VirtualOpTimeToCapacity`
 //
+
 rule virtualOpTimeToCapacity_to_derived {
 	-- v: VirtualOpTimeToCapacity {
 		---capacity -> c
@@ -100,19 +101,20 @@ rule virtualOpTimeToCapacity_to_derived {
 		++ -derivedOpTimes -> op
 	// Explicitly set the opposite edge
 	}
-	
+
 	# v.isSelected == true
 }
 
 rule removeVirtualOpTimeToCapacity {
 	-- v: VirtualOpTimeToCapacity
-	
+
 	# v.isSelected == false
 }
 
 //
 // Remove objects of the type `VirtualWorkloadToCapacity`
 //
+
 rule virtualWorkloadToCapacity {
 	-- v: VirtualWorkloadToCapacity {
 		---capacity -> c
@@ -127,12 +129,12 @@ rule virtualWorkloadToCapacity {
 		++ -derivedWorkloads -> w
 	// Explicitly set the opposite edge
 	}
-	
+
 	# v.isSelected == true
 }
 
 rule removeVirtualWorkloadToCapacity {
 	-- v: VirtualWorkloadToCapacity
-	
+
 	# v.isSelected == false
 }

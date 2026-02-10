@@ -66,7 +66,7 @@ rule selectOperationDay_select {
 		- capacity -> c
 		.isSelected := true
 	}
-	
+
 	// Notice: the `Capacity` object cannot be omitted because it constraints
 	// `vwc` and `vopc` to deal with the same OT.
 	c : Capacity
@@ -358,7 +358,7 @@ constraint with countPatientsForRoom {
 	// If the patient count is greater than 0 there has to be at least one nurse assigned for each shift on that day and vice versa
 	context.variables.patientCount >= 1
 	<=>
-	
+
 	mappings.selectedShiftToRoster->filter(
 		element.nodes.vsr.shift == context.nodes.s
 	)->sum(element.value) == 1
@@ -704,7 +704,7 @@ constraint with otsPerSurgeon {
 
 /* --------------------------------------------------------------------------------------------------------------------- */
 
-// S7: The number of days between a patient´s release date and their actual date of admission should be minimized
+// S7: The number of days between a patient's release date and their actual date of admission should be minimized
 function calculateWaitTime with selectedShiftToFirstWorkload {
 	((context.nodes.vsw.shift.shiftNo / 3) - context.nodes.vsw.workload.patient.earliestDay) * context.value
 }

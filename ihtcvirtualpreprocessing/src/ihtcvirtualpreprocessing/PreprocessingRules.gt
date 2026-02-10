@@ -1,10 +1,6 @@
 import "platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
 
 //
-// GT rules for the pre-processing of a (virtual) model
-//
-
-//
 // Pre-processing for all virtual elements between `Roster` and `Shift`
 //
 
@@ -37,7 +33,7 @@ rule assignNurseToRoomVirtual_preproc {
 		++ -shift -> shift
 		.isSelected := false
 	}
-	
+
 	# roster.shiftNo == shift.shiftNo
 }
 when noVirtualShiftToRoster
@@ -48,14 +44,14 @@ when noVirtualShiftToRoster
 
 // Pattern to find assigned first Shifts for Patients
 pattern patientShiftIsAssigned {
-	w : Workload 
-	
+	w : Workload
+
 	vsw : VirtualShiftToWorkload {
 		- workload -> w
 		- shift -> s
 	}
-	
-	s : Shift 
+
+	s : Shift
 }
 condition patientShiftIsNotAssigned = forbid patientShiftIsAssigned
 
@@ -64,7 +60,7 @@ pattern incompatibleRoomForPatient {
 	p : Patient {
 		- incompatibleRooms -> r
 	}
-	
+
 	r : Room
 }
 condition compatibleRoomForPatient = forbid incompatibleRoomForPatient
@@ -75,18 +71,18 @@ rule assignPatientToRoomVirtual_preproc {
 	p : Patient {
 		- firstWorkload -> w
 	}
-	
+
 	w : Workload
-	
+
 	c : Capacity
-	
+
 	vexist : VirtualWorkloadToCapacity {
 		- capacity -> c
 		- workload -> w
 		++ - enables_virtualShiftToWorkload -> vnew
 		// Explicitly set the opposite edge
 	}
-	
+
 	++ vnew : VirtualShiftToWorkload {
 		++ - workload -> w
 		++ - shift -> s
@@ -94,29 +90,29 @@ rule assignPatientToRoomVirtual_preproc {
 		.wasImported := false
 		++ - requires_virtualWorkloadToCapacity -> vexist
 	}
-	
+
 	s : Shift {
 		- room -> r
 		++ - virtualWorkload -> vnew
 	}
-	
+
 	r : Room
-	
+
 	# s.shiftNo % 3 == 0
 	# p.isOccupant == false
-	
+
 	// Optimization: patient must be ready by the current day.
 	// I.e., it is never an option to set the admission day of a patient to
 	// a day before the patient's first possible admission day so we can
 	// already remove these matches using the PM.
 	# s.shiftNo / 3 >= p.earliestDay
-	
+
 	// Optimization: patient's due date must not be violated.
 	// I.e., it is never an option to set the admission day of a patient to
 	// a day after the patient's due day so we can already remove these
 	// matches using the PM.
 	# s.shiftNo / 3 <= p.dueDay
-	
+
 	// Day of the first assigned shift must match the day of the OT's
 	// capacity object.
 	# s.shiftNo / 3 == c.day
@@ -130,7 +126,7 @@ when compatibleRoomAndNotAssigned
 pattern nextVirtualShiftToWorkloadExists {
 	nextw : Workload
 	nexts : Shift
-	
+
 	nextvsw : VirtualShiftToWorkload {
 		- workload -> nextw
 		- shift -> nexts
@@ -142,28 +138,28 @@ rule extendPatientStayVirtual_preproc {
 	p : Patient {
 		- workloads -> prevw
 	}
-	
+
 	prevw : Workload {
 		- next -> nextw
 	}
-	
+
 	nextw : Workload
-	
+
 	prevvsw : VirtualShiftToWorkload {
 		- workload -> prevw
 		- shift -> prevs
 		++ - enables_virtualShiftToWorkload -> vnew
 		// Explicitly set the opposite edge
 	}
-	
+
 	prevs : Shift {
 		- next -> nexts
 	}
-	
+
 	nexts : Shift {
 		++ - virtualWorkload -> vnew
 	}
-	
+
 	++ vnew : VirtualShiftToWorkload {
 		++ - workload -> nextw
 		++ - shift -> nexts
@@ -184,25 +180,25 @@ rule occupantsFirstWorkloadVirtual_preproc {
 	p : Patient {
 		- firstWorkload -> w
 	}
-	
+
 	w : Workload {
 		-- - derivedShift -> s
 	}
-	
+
 	s : Shift {
 		// Explicitly delete both edges
 		// (Maybe deleting one is sufficient)
 		-- - derivedWorkloads -> w
 		++ - virtualWorkload -> vnew
 	}
-	
+
 	++ vnew : VirtualShiftToWorkload {
 		++ - workload -> w
 		++ - shift -> s
 		.isSelected := false
 		.wasImported := true
 	}
-	
+
 	# p.isOccupant == true
 }
 
@@ -210,28 +206,26 @@ rule extendOccupantsStayVirtual_preproc {
 	p : Patient {
 		- workloads -> w
 	}
-	
+
 	w : Workload {
 		-- - derivedShift -> s
 		- prev -> prevw
 	}
-	
-	prevw : Workload {
-		
-	}
-	
+
+	prevw : Workload
+
 	prevvstw : VirtualShiftToWorkload {
 		- workload -> prevw
 		++ - enables_virtualShiftToWorkload -> vnew
 	}
-	
+
 	s : Shift {
 		// Explicitly delete both edges
 		// (Maybe deleting one is sufficient)
 		-- - derivedWorkloads -> w
 		++ - virtualWorkload -> vnew
 	}
-	
+
 	++ vnew : VirtualShiftToWorkload {
 		++ - workload -> w
 		++ - shift -> s
@@ -239,7 +233,7 @@ rule extendOccupantsStayVirtual_preproc {
 		.wasImported := true
 		++ - requires_virtualShiftToWorkload -> prevvstw
 	}
-	
+
 	# p.isOccupant == true
 }
 
@@ -250,7 +244,7 @@ rule extendOccupantsStayVirtual_preproc {
 pattern findVirtualOpTimeToCapacity {
 	op : OpTime
 	c: Capacity
-	
+
 	v: VirtualOpTimeToCapacity {
 		- capacity -> c
 		- opTime -> op
@@ -260,17 +254,17 @@ condition noOpTimeToCapacity = forbid findVirtualOpTimeToCapacity
 
 rule assignSurgeonToOtVirtual_preproc {
 	op : OpTime
-	
+
 	c : Capacity {
 		++ - virtualOpTime -> vnew
 	}
-	
+
 	++ vnew : VirtualOpTimeToCapacity {
 		++ - opTime -> op
 		++ - capacity -> c
 		.isSelected := false
 	}
-	
+
 	# op.day == c.day
 	# c.maxCapacity > 0
 	# op.maxOpTime > 0
@@ -284,7 +278,7 @@ when noOpTimeToCapacity
 pattern findVirtualWorkloadToOpTime {
 	w: Workload
 	op: OpTime
-	
+
 	v : VirtualWorkloadToOpTime {
 		- opTime -> op
 		- workload -> w
@@ -295,7 +289,7 @@ condition noVirtualEdgeWorkloadToOpTime = forbid findVirtualWorkloadToOpTime
 pattern findVirtualWorkloadToCapacity {
 	w: Workload
 	c: Capacity
-	
+
 	v : VirtualWorkloadToCapacity {
 		- capacity -> c
 		- workload -> w
@@ -308,30 +302,30 @@ rule fixOperationDayOpTimeVirtual_preproc {
 		- firstWorkload -> w
 		- surgeon -> s
 	}
-	
+
 	w : Workload
-	
+
 	s : Surgeon {
 		- opTimes -> op
 	}
-	
+
 	op : OpTime {
 		++ - virtualWorkload -> vnew
 	}
-	
+
 	vexist : VirtualOpTimeToCapacity {
 		- opTime -> op
 		// Explicitly set the opposite edge
 		++ - enables_virtualWorkloadToOpTime -> vnew
 	}
-	
+
 	++ vnew : VirtualWorkloadToOpTime {
 		++ - opTime -> op
 		++ - workload -> w
 		.isSelected := false
 		++ - requires_virtualOpTimeToCapacity -> vexist
 	}
-	
+
 	# p.earliestDay <= op.day
 	# op.day <= p.dueDay
 	# p.surgeryDuration <= op.maxOpTime
@@ -345,22 +339,22 @@ rule fixOperationDayCapacityVirtual_preproc {
 		- virtualOpTime -> vop
 		++ - virtualWorkload -> vnew2
 	}
-	
+
 	vop : VirtualOpTimeToCapacity {
 		- opTime -> opTime
 	}
-	
+
 	opTime : OpTime {
 		- virtualWorkload -> vw
 	}
-	
+
 	vw : VirtualWorkloadToOpTime {
 		- workload -> w
 		++ - enables_virtual_WorkloadToCapacity -> vnew2
 	}
-	
+
 	w : Workload
-	
+
 	++ vnew2 : VirtualWorkloadToCapacity {
 		++ - workload -> w
 		++ - capacity -> c
