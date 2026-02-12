@@ -106,15 +106,6 @@ pattern optionalPatient {
 	# p.isOccupant == false
 }
 
-// Pattern used to map which rooms are occupied on a specific shift.
-// Used for a mapping which counts the patients over a specific room for a
-// specific day -> enforce that the capacity of a room is not exceeded
-// Additionally used to make sure nurses are not assigned to empty rooms and
-// each non-empty room has an assigned nurse
-pattern shift {
-	s : Shift
-}
-
 // Pattern used in hard constraint H1 to make sure the capacity of a room is
 // not exceeded.
 // This must only be ensured for each early shift
@@ -250,14 +241,6 @@ mapping selectedShiftToRoster to selectShiftToRoster_select;
 //
 // Utility Mappings
 //
-
-// Mapping that holds the information how many patients are assigned to a
-// room on a specific day
-// `patientCount`: Amount of patients that are assigned to a room in a
-// specific shift
-mapping countPatientsForRoom to shift {
-	var patientCount : EInt
-};
 
 // Mapping for all assigned patients. (occupants and new patients for each
 // workload (first + following))
@@ -401,8 +384,11 @@ constraint with mandatoryPatient {
 // The calculated amount of patients assigned to each room on each morning
 // shift of a day has to be smaller or equal to the amount of available beds.
 
-constraint with countPatientsForRoom {
-	 context.variables.patientCount <= context.nodes.s.room.beds
+constraint with Shift {
+	mappings.assignedPatientsToRoom->filter(
+		element.nodes.vsw.shift == context
+	)->sum(element.value)
+	<= context.room.beds
 }
 
 /* ----------------------------------------------------------------------- */
@@ -412,21 +398,23 @@ constraint with countPatientsForRoom {
 // This constraint was previously implemented by an additional constraint,
 // before it was added as a hard constraint by the IHTC.
 
-constraint with countPatientsForRoom {
+constraint with Shift {
 	// If the patient count is greater than 0 there has to be at least one
 	// nurse assigned for each shift on that day and vice versa
-	context.variables.patientCount >= 1
+	mappings.assignedPatientsToRoom->filter(
+		element.nodes.vsw.shift == context
+	)->sum(element.value) >= 1
 	<=>
 
 	mappings.selectedShiftToRoster->filter(
-		element.nodes.vsr.shift == context.nodes.s
+		element.nodes.vsr.shift == context
 	)->sum(element.value) == 1
 
 	&
 
   	// A maximum of 1 nurse can be assigned to a room in a shift
   	mappings.selectedShiftToRoster->filter(
-  		element.nodes.vsr.shift == context.nodes.s
+  		element.nodes.vsr.shift == context
   	)->sum(element.value) <= 1
 }
 
@@ -580,16 +568,6 @@ constraint with assignedNursesToWorkload {
 			element.nodes.vsr == context.nodes.vsr
 		)->sum(element.value) == 1
 	]
-}
-
-// U2: counts how many patients are currently assigned to each room.
-// Needed for constraints: H7, H8
-constraint with countPatientsForRoom {
-	context.variables.patientCount
-	==
-	mappings.assignedPatientsToRoom->filter(
-		element.nodes.vsw.shift == context.nodes.s
-	)->sum(element.value)
 }
 
 //
