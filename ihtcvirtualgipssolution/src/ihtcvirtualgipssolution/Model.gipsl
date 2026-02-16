@@ -383,7 +383,6 @@ constraint with mandatoryPatient {
 // exceed the capacity of the room.
 // The calculated amount of patients assigned to each room on each morning
 // shift of a day has to be smaller or equal to the amount of available beds.
-
 constraint with Shift {
 	mappings.assignedPatientsToRoom->filter(
 		element.nodes.vsw.shift == context
@@ -397,7 +396,6 @@ constraint with Shift {
 // nonempty room in each shift is assigned to one nurse.
 // This constraint was previously implemented by an additional constraint,
 // before it was added as a hard constraint by the IHTC.
-
 constraint with Shift {
 	// If the patient count is greater than 0 there has to be at least one
 	// nurse assigned for each shift on that day and vice versa
@@ -429,7 +427,6 @@ constraint with Shift {
 // -> Already implemented in constraint V3 in context with C9
 
 // C3: A patient is assigned to at most one operating time slot
-
 constraint with Patient {
 	mappings.selectedOperationDay->
 		filter(element.nodes.vwc.workload.patient == context)
