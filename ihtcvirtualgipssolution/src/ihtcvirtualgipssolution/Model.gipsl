@@ -81,20 +81,6 @@ rule selectOperationDay {
 	ot : OT
 }
 
-// NPA: Rule that selects an  VirtualShiftToRoster-Node to be adopted in the final model.
-rule selectShiftToRoster {
-	vsr : VirtualShiftToRoster {
-		.isSelected := true
-		- shift -> s
-	}
-
-	s : Shift {
-		- room -> r
-	}
-
-	r : Room
-}
-
 //
 // Utility Patterns used in Constraints
 //
@@ -260,14 +246,15 @@ pattern nursePatientTuple {
 // SCP.1-3: Decides on what day and in which OT a patient is operated on.
 mapping selectedOperationDay to selectOperationDay;
 
-// NPA: Decides which nurses are assigned to a shift/room on a specific day.
-mapping selectedShiftToRoster to selectShiftToRoster;
-
 //
 // Types
 //
 
 type VirtualShiftToWorkload {
+	var isSelected : EBoolean bind to isSelected
+};
+
+type VirtualShiftToRoster {
 	var isSelected : EBoolean bind to isSelected
 };
 
@@ -417,49 +404,49 @@ constraint with countPatientsForRoom {
 // This constraint was previously implemented by an additional constraint, before it was added as a hard constraint by the IHTC.
 
 constraint with countPatientsForRoom {
-	// If the patient count is greater than 0 there has to be at least one nurse assigned for each shift on that day
+	// If the patient count is greater than 0 there has to be at least one nurse assigned for each shift on that day 
 	context.variables.patientCount
 	<=
-	mappings.selectedShiftToRoster->join((s, s))->sum(element.value) * 1000
+	types.VirtualShiftToRoster->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected) * 1000
 	&
 	context.variables.patientCount
 	<=
-	mappings.selectedShiftToRoster->join((r, r))->filter(
-		element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 1
-	)->sum(element.value) * 1000
+	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
+		& element.shift.shiftNo == context.nodes.s.shiftNo + 1 //
+	)->sum(element.variables.isSelected) * 1000
 	&
 	context.variables.patientCount
 	<=
-	mappings.selectedShiftToRoster->join((r, r))->filter(
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 2
-	)->sum(element.value) * 1000
+	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
+		& element.shift.shiftNo == context.nodes.s.shiftNo + 2 //
+	)->sum(element.variables.isSelected) * 1000
 	&
 
 	// If there is a nurse assigned in any of the shifts there has to be at least one patient assigned to the room
-	mappings.selectedShiftToRoster->join((s, s))->sum(element.value)
+	types.VirtualShiftToRoster->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected)
   	+
-    mappings.selectedShiftToRoster->join((r, r))->filter(
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 1
-	)->sum(element.value)
+	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
+		& element.shift.shiftNo == context.nodes.s.shiftNo + 1 //
+	)->sum(element.variables.isSelected)
 	+
-	mappings.selectedShiftToRoster->join((r, r))->filter(
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 2
-	)->sum(element.value)
-  	<=
+	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
+		& element.shift.shiftNo == context.nodes.s.shiftNo + 2 //
+	)->sum(element.variables.isSelected)
+  	<= 
   	context.variables.patientCount * 1000
-
+  	 
   	&
-
-  	// A room can only be assigned to 1 or 0 nurses for each shift
-  	mappings.selectedShiftToRoster->join((s, s))->sum(element.value) <= 1
+  	
+  	// A room can only be assigned to 1 or 0 nurses for each shift 
+	types.VirtualShiftToRoster->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected) <= 1
 	&
-	mappings.selectedShiftToRoster->join((r, r))->filter(
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 1
-	)->sum(element.value) <= 1
+	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
+		& element.shift.shiftNo == context.nodes.s.shiftNo + 1 //
+	)->sum(element.variables.isSelected) <= 1
 	&
-	mappings.selectedShiftToRoster->join((r, r))->filter(
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 2
-	)->sum(element.value) <= 1
+	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
+		& element.shift.shiftNo == context.nodes.s.shiftNo + 2 //
+	)->sum(element.variables.isSelected) <= 1
 }
 
 
@@ -564,19 +551,19 @@ constraint with assignedNursesToWorkload {
 	>=
 	mappings.assignedPatientsToRoom->join((vsw, vsw))->sum(element.value)
 	+
-	mappings.selectedShiftToRoster->join((vsr, vsr))->sum(element.value)
+	context.nodes.vsr.variables.isSelected
 	- 1
-
+	
 	&
-
+	
 	mappings.assignedPatientsToRoom->join((vsw, vsw))->sum(element.value)
-	>=
+	>= 
 	context.value
-
+	
 	&
-
-	mappings.selectedShiftToRoster->join((vsr, vsr))->sum(element.value)
-	>=
+	
+	context.nodes.vsr.variables.isSelected
+	>= 
 	context.value
 }
 
@@ -698,11 +685,15 @@ function calculateUnqualifiedNurses with assignedPatientsToRoom {
 
 // U11: Sets the mapping variable to the difference in skill level.
 constraint with assignedPatientsToRoom {
-	context.variables.penalizedSkillDiff
-	>=
+	context.variables.penalizedSkillDiff 
+	>= 
 	mappings.assignedPatientsToRoom->join((vsw, vsw))->sum(element.value * element.nodes.w.minNurseSkill)
 	-
-	mappings.selectedShiftToRoster->join((s, s))->sum(element.value * element.nodes.vsr.roster.nurse.skillLevel)
+	types.VirtualShiftToRoster->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected * element.roster.nurse.skillLevel)
+	
+	& 
+	
+	context.variables.penalizedSkillDiff >= 0
 }
 
 // U12: calculates the penalized difference between the skill levels. max(0, minLevel - nurseLevel) = max(0, skillDiff).
