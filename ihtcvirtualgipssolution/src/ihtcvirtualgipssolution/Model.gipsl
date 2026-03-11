@@ -257,10 +257,10 @@ pattern nursePatientTuple {
 // Rule Mappings
 //
 
-// NPA: Decides on what day and in which OT a patient is operated on.
+// SCP.1-3: Decides on what day and in which OT a patient is operated on.
 mapping selectedOperationDay to selectOperationDay;
 
-// SCP.1-3: Decides which nurses are assigned to a shift/room on a specific day.
+// NPA: Decides which nurses are assigned to a shift/room on a specific day.
 mapping selectedShiftToRoster to selectShiftToRoster;
 
 //
