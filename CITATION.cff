@@ -1,28 +1,42 @@
 cff-version: 1.2.0
-message: "If you use the GIPS examples in your research, please cite it using these metadata."
-abstract: GIPS is an open-source framework for Graph-Based (M)ILP Problem Specification. This repository holds some examples for GIPS.
+message: "If you use the GIPS projects in your research, please cite it using these metadata."
+abstract: GIPS is an open-source framework for Graph-Based (M)ILP Problem Specification. This repository holds GIPS projects related to my dissertation.
 authors:
-  - family-names: Ehmes
-    given-names: Sebastian
-    orcid: https://orcid.org/0000-0001-8001-6827
   - family-names: Kratz
     given-names: Maximilian
     orcid: https://orcid.org/0000-0001-7396-7763
-title: Graph-Based (M)ILP Problem Specification Tool - Project examples
-version: 1.5.0
-date-released: 2025-07-03
-repository-code: "https://github.com/Echtzeitsysteme/gips-examples"
+title: IHTP/IHTC dissertation-related GIPS projects
+version: 1.0.0
+date-released: 2026-03-11
+repository-code: "https://github.com/maxkratz/dissertation-ihtp"
 keywords:
-  - "virtual network embedding"
   - "model-driven software engineering"
-  - simulation
   - "eclipse modeling framework"
   - pattern-matching
   - model
   - metamodel
+  - modeling
+  - metamodeling
   - "integer linear programming"
+  - ilp
   - "mixed integer linear programming"
+  - milp
   - emoflon
   - "graph transformation"
   - "optimization"
+  - "model-driven optimization"
+  - "graph-based (m)ilp problem specification"
+  - "graph-based (m)ilp problem specification tool"
+  - gips
+  - "gips framework"
+  - "gips tool"
+  - "integrated healthcare timetabling competition 2024"
+  - "integrated healthcare timetabling competition"
+  - ihtc
+  - "integrated healthcare timetabling problem"
+  - ihtp
+  - healthcare
+  - hospital
+  - timetabling
+  - dissertation
 license: "GPL-3.0"
