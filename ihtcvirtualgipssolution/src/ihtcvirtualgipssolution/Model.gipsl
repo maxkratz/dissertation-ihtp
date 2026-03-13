@@ -407,7 +407,7 @@ constraint with countPatientsForRoom {
 	// If the patient count is greater than 0 there has to be at least one nurse assigned for each shift on that day 
 	context.variables.patientCount
 	<=
-	types.VirtualShiftToRoster->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected) * 1000
+	types.VirtualShiftToRoster->join((shift, s))->sum(element.variables.isSelected) * 1000
 	&
 	context.variables.patientCount
 	<=
@@ -423,7 +423,7 @@ constraint with countPatientsForRoom {
 	&
 
 	// If there is a nurse assigned in any of the shifts there has to be at least one patient assigned to the room
-	types.VirtualShiftToRoster->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected)
+	types.VirtualShiftToRoster->join((shift, s))->sum(element.variables.isSelected)
   	+
 	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
 		& element.shift.shiftNo == context.nodes.s.shiftNo + 1 //
@@ -438,7 +438,7 @@ constraint with countPatientsForRoom {
   	&
   	
   	// A room can only be assigned to 1 or 0 nurses for each shift 
-	types.VirtualShiftToRoster->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected) <= 1
+	types.VirtualShiftToRoster->join((shift, s))->sum(element.variables.isSelected) <= 1
 	&
 	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
 		& element.shift.shiftNo == context.nodes.s.shiftNo + 1 //
@@ -507,7 +507,7 @@ pattern firstVsw {
 constraint with firstVsw {
 	context.nodes.vsw.variables.isSelected
 	<=
-	mappings.selectedOperationDay->filter(element.nodes.w == context.nodes.w)->sum(element.value)
+	mappings.selectedOperationDay->join((w, w))->sum(element.value)
 }
 
 // V2.2:  The virtual Node "VirtualWorkloadToCapacity" can only be added to the final model if
@@ -515,7 +515,7 @@ constraint with firstVsw {
 constraint with selectedOperationDay{
 	context.value
 	<=
-	types.VirtualShiftToWorkload->filter(element.workload == context.nodes.w & element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.variables.isSelected)
+	types.VirtualShiftToWorkload->join((workload, w))->filter(element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.variables.isSelected)
 }
 
 // V3: The stay of a patient can be extended by selecting a following Node "VirtualWorkloadToShift"
@@ -687,7 +687,7 @@ constraint with assignedPatientsToRoom {
 	>= 
 	mappings.assignedPatientsToRoom->join((vsw, vsw))->sum(element.value * element.nodes.w.minNurseSkill)
 	-
-	types.VirtualShiftToRoster->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected * element.roster.nurse.skillLevel)
+	types.VirtualShiftToRoster->join((shift, s))->sum(element.variables.isSelected * element.roster.nurse.skillLevel)
 	
 	& 
 	
