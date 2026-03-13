@@ -477,9 +477,7 @@ constraint with Patient {
 
 // C7: A patient can't be assigned to more than one "first" shift
 constraint with Patient {
-//	context.firstWorkload.virtualShift->sum(element.variables.isSelected) <= 1
-	// Workaround, because ^ is not yet possible
-	types.VirtualShiftToWorkload->filter(element.workload == context.firstWorkload)->sum(element.variables.isSelected) <= 1
+	context.firstWorkload.virtualShift->sum(element.variables.isSelected) <= 1
 }
 
 //
