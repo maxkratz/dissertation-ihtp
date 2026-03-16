@@ -473,7 +473,7 @@ public class VirtualModelComparator {
 		boolean equals = true;
 		equals = equals && (a.getDay() == b.getDay());
 		equals = equals && (a.getMaxCapacity() == b.getMaxCapacity());
-		equals = equals && (isEqual(a.getOt(), b.getOt()));
+		equals = equals && (isEqual(a.getRelatedOT(), b.getRelatedOT()));
 
 		// TODO: Collections are missing
 

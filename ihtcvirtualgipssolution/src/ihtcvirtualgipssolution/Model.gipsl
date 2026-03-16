@@ -94,7 +94,7 @@ rule selectOperationDay {
 	}
 
 	c : Capacity {
-		- ot -> ot
+		- relatedOT -> ot
 	}
 
 	ot : OT
