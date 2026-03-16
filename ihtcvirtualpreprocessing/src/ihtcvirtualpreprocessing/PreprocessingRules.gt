@@ -27,8 +27,8 @@ condition noVirtualRoster = forbid findVirtualRoster
 // virtual shift to roster object connecting those two.
 rule assignNurseToRoom {
 	root : Root {
-		-nurses -> nurse
-		-rooms -> room
+		-allNurses -> nurse
+		-allRooms -> room
 	}
 
 	nurse : Nurse {

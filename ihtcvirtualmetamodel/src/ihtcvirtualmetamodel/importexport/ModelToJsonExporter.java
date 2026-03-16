@@ -94,7 +94,7 @@ public class ModelToJsonExporter {
 		}
 
 		final JsonArray patientsJson = new JsonArray();
-		for (final Patient p : this.model.getPatients()) {
+		for (final Patient p : this.model.getAllPatients()) {
 			if (p.isIsOccupant()) {
 				continue;
 			}
@@ -102,7 +102,7 @@ public class ModelToJsonExporter {
 		}
 
 		final JsonArray nursesJson = new JsonArray();
-		for (final Nurse n : this.model.getNurses()) {
+		for (final Nurse n : this.model.getAllNurses()) {
 			nursesJson.add(convertNurseToJson(n));
 		}
 

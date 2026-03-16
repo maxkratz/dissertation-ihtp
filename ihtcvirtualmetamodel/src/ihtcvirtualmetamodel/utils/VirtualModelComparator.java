@@ -706,28 +706,28 @@ public class VirtualModelComparator {
 		Objects.requireNonNull(data);
 
 		// Rosters
-		model.getNurses().forEach(nurse -> {
+		model.getAllNurses().forEach(nurse -> {
 			nurse.getRosters().forEach(roster -> {
 				data.get(VirtualShiftToRoster.class.getSimpleName()).addAll(roster.getVirtualShift());
 			});
 		});
 
 		// Shift
-		model.getRooms().forEach(room -> {
+		model.getAllRooms().forEach(room -> {
 			room.getShifts().forEach(shift -> {
 				data.get(VirtualShiftToWorkload.class.getSimpleName()).addAll(shift.getVirtualWorkload());
 			});
 		});
 
 		// OpTime
-		model.getSurgeons().forEach(surgeon -> {
+		model.getAllSurgeons().forEach(surgeon -> {
 			surgeon.getOpTimes().forEach(optime -> {
 				data.get(VirtualWorkloadToOpTime.class.getSimpleName()).addAll(optime.getVirtualWorkload());
 			});
 		});
 
 		// Capacity (2x)
-		model.getOts().forEach(ot -> {
+		model.getAllOTs().forEach(ot -> {
 			ot.getCapacities().forEach(capacity -> {
 				data.get(VirtualOpTimeToCapacity.class.getSimpleName()).addAll(capacity.getVirtualOpTime());
 				data.get(VirtualWorkloadToCapacity.class.getSimpleName()).addAll(capacity.getVirtualWorkload());
