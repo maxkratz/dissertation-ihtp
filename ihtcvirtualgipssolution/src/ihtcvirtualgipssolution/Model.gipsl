@@ -94,10 +94,10 @@ rule selectOperationDay {
 	}
 
 	c : Capacity {
-		- ot -> ot
+		- relatedOT -> relatedOT
 	}
 
-	ot : OT
+	relatedOT : OT
 }
 
 // NPA: Rule that selects an  VirtualShiftToRoster-Node to be adopted in the final model.
@@ -167,8 +167,8 @@ pattern patientForRoom {
 
 // Pattern used in a mapping to save the information if an OT is used on a specific Day and used to make sure the Capacity of an OT is not exceeded on each day.
 // c.maxCapacity > 0 is already enforced by the preprocessing because Capacity Objects with maxCapacity <= 0 are not created.
-pattern otCapacityTuple {
-	ot : OT {
+pattern capacityOTTuple {
+	relatedOT : OT {
 		- capacities -> c
 	}
 
@@ -217,7 +217,7 @@ pattern surgeonOTForDay {
 
 	op : OpTime
 
-	ot : OT
+	inOT : OT
 }
 
 // Pattern used for a Mapping to calculate what age groups are present in a specific room for all shifts.
@@ -313,15 +313,15 @@ mapping assignedPatientsToRoom to patientForRoom{
 mapping assignedGenderToRoomOnShift to genderRoomShift;
 
 // Mapping that decides which OTs are open on a specific day.
-mapping openOTs to otCapacityTuple;
+mapping openOTs to capacityOTTuple;
 
 // Mapping that holds the information if a surgeon operates in a specific OT on a specific day.
-mapping otForSurgeon to surgeonOTForDay;
+mapping surgeonInOT to surgeonOTForDay;
 
 // mapping that counts how many OTs a surgeon is assigned to on a specific day.
 // penalizedOTs: A penalty is applied if a surgeon has more than 1 assigned OT per day. Maximum of 0 and
 // amount of OTs a surgeon is operating in on a specific day -1.
-mapping otsPerSurgeon to surgeonOptimeTuple {
+mapping surgeonPenalizedOTs to surgeonOptimeTuple {
 	var penalizedOTs : EInt
 };
 
@@ -400,8 +400,8 @@ constraint with surgeonOptimeTuple {
 
 // H4: OT overtime: The duration of all surgeries allocated to an OT on a day must not exceed
 // its maximum capacity.
-constraint with otCapacityTuple {
-	mappings.selectedOperationDay->join((ot, ot))->filter(
+constraint with capacityOTTuple {
+	mappings.selectedOperationDay->join((relatedOT, relatedOT))->filter(
 		element.nodes.vopc.capacity.day == context.nodes.c.day
 	)->sum(element.nodes.p.surgeryDuration * element.value)
 	<=
@@ -828,13 +828,13 @@ constraint with openOTs {
 /* --------------------------------------------------------------------------------------------------------------------- */
 
 // S6: The number of different OTs a surgeon is assigned to per working day should be minimized.
-function calculateOtsPerSurgeon with otsPerSurgeon {
+function calculateOTsPerSurgeon with surgeonPenalizedOTs {
 	context.variables.penalizedOTs
 }
 
 // U5: sets the mapping to true if the surgeon operates in the OT on that day.
-constraint with otForSurgeon {
-	mappings.selectedOperationDay->join((opTime, op), (ot, ot))->sum(element.value)
+constraint with surgeonInOT {
+	mappings.selectedOperationDay->join((opTime, op), (relatedOT, inOT))->sum(element.value)
 	<=
 	context.value * 1000
 
@@ -842,14 +842,14 @@ constraint with otForSurgeon {
 
 	context.value
 	<=
-	mappings.selectedOperationDay->join((opTime, op), (ot, ot))->sum(element.value)
+	mappings.selectedOperationDay->join((opTime, op), (relatedOT, inOT))->sum(element.value)
 }
 
 // U6: counts the penalized OTs per surgeon for each day, which must be at greater or equal to 0.
-constraint with otsPerSurgeon {
+constraint with surgeonPenalizedOTs {
 	context.variables.penalizedOTs
 	>=
-	mappings.otForSurgeon->join((op, op))->sum(element.value) - 1
+	mappings.surgeonInOT->join((op, op))->sum(element.value) - 1
 
 	&
 
@@ -879,7 +879,7 @@ objective : min {
 	+ functions.calculateContinuityOfCare * types.Weight->sum(element.continuityOfCare)
 	+ functions.calculateNurseWorkload * types.Weight->sum(element.nurseExcessiveWorkload)
 	+ functions.calculateOpenOTs * types.Weight->sum(element.openOperatingTheater)
-	+ functions.calculateOtsPerSurgeon * types.Weight->sum(element.surgeonTransfer)
+	+ functions.calculateOTsPerSurgeon * types.Weight->sum(element.surgeonTransfer)
 	+ functions.calculateWaitTime * types.Weight->sum(element.patientDelay)
 	+ functions.calculateNotAssignedOptionalPatients * types.Weight->sum(element.unscheduledOptional)
 }

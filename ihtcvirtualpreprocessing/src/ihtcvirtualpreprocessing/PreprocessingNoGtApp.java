@@ -126,7 +126,7 @@ public class PreprocessingNoGtApp {
 	 */
 	private void createVirtualShiftToWorkloadsOccupants() {
 		Objects.requireNonNull(model);
-		model.getPatients().stream().filter(patient -> patient.isIsOccupant()).forEach(occupant -> {
+		model.getAllPatients().stream().filter(patient -> patient.isIsOccupant()).forEach(occupant -> {
 			VirtualShiftToWorkload vPrev = null;
 			for (final Workload workload : occupant.getWorkloads()) {
 				final Shift shift = workload.getDerivedShift();
@@ -158,9 +158,9 @@ public class PreprocessingNoGtApp {
 	 */
 	private void createVirtualShiftToRosterCandidates() {
 		Objects.requireNonNull(model);
-		model.getNurses().forEach(nurse -> {
+		model.getAllNurses().forEach(nurse -> {
 			nurse.getRosters().forEach(roster -> {
-				model.getRooms().forEach(room -> {
+				model.getAllRooms().forEach(room -> {
 					try {
 						final Shift shift = getShift(room, roster.getShiftNo());
 						final VirtualShiftToRoster v = IhtcvirtualmetamodelFactory.eINSTANCE
@@ -181,7 +181,7 @@ public class PreprocessingNoGtApp {
 	 */
 	private void createVirtualOpTimeToCapacityCandidates() {
 		Objects.requireNonNull(model);
-		model.getSurgeons().forEach(surgeon -> {
+		model.getAllSurgeons().forEach(surgeon -> {
 			surgeon.getOpTimes().forEach(opTime -> {
 				if (opTime.getMaxOpTime() > 0) {
 					final List<Capacity> allCapacitiesOnDay = getCapacitiesForDay(opTime.getDay());
@@ -206,7 +206,7 @@ public class PreprocessingNoGtApp {
 	 */
 	private void createVirtualWorkloadToOperationCandidates() {
 		Objects.requireNonNull(model);
-		model.getPatients().stream().filter(patient -> !patient.isIsOccupant()).forEach(patient -> {
+		model.getAllPatients().stream().filter(patient -> !patient.isIsOccupant()).forEach(patient -> {
 			final Workload w = patient.getFirstWorkload();
 
 			// Create virtual edges between Workload and OpTime
@@ -238,7 +238,7 @@ public class PreprocessingNoGtApp {
 		});
 
 		// Create virtual edges between Workload and Capacity
-		model.getOts().forEach(ot -> {
+		model.getAllOTs().forEach(ot -> {
 			ot.getCapacities().forEach(c -> {
 				// This ensures we only look at OpTime, Capacity tuples on the same day.
 				c.getVirtualOpTime().forEach(vop -> {
@@ -266,13 +266,13 @@ public class PreprocessingNoGtApp {
 	 */
 	private void createVirtualShiftToWorkloadInitialCandidates() {
 		Objects.requireNonNull(model);
-		model.getPatients().stream().filter(patient -> !patient.isIsOccupant()).forEach(patient -> {
-			model.getRooms().stream().filter(room -> !patient.getIncompatibleRooms().contains(room)).forEach(room -> {
+		model.getAllPatients().stream().filter(patient -> !patient.isIsOccupant()).forEach(patient -> {
+			model.getAllRooms().stream().filter(room -> !patient.getIncompatibleRooms().contains(room)).forEach(room -> {
 				room.getShifts().forEach(shift -> {
 					// Check shift time conditions (i.e., only use the first shift per day)
 					if (shift.getShiftNo() % 3 == 0) {
 						// If an occupant with a different gender is assigned to the same room during the potential stay time -> Don't create virtual shifts
-						final List<Patient> occupantsInRoom = model.getPatients().stream() // Get all patients from the model
+						final List<Patient> occupantsInRoom = model.getAllPatients().stream() // Get all patients from the model
 								.filter(occupant -> occupant.isIsOccupant() // Only take occupants into account
 								 && occupant.getFirstWorkload().getVirtualShift().get(0).getShift().getRoom().equals(room)) // The occupant's room must match the patient's room
 								.toList();
@@ -349,7 +349,7 @@ public class PreprocessingNoGtApp {
 
 		// Collect all initial assignments (to be iterated over later on)
 		final List<VirtualShiftToWorkload> initialAssignments = new LinkedList<VirtualShiftToWorkload>();
-		model.getRooms().forEach(room -> {
+		model.getAllRooms().forEach(room -> {
 			room.getShifts().forEach(shift -> {
 				shift.getVirtualWorkload().forEach(vinit -> {
 					initialAssignments.add(vinit);
@@ -466,7 +466,7 @@ public class PreprocessingNoGtApp {
 
 		final List<Capacity> allCapacities = new LinkedList<Capacity>();
 
-		for (final OT ot : model.getOts()) {
+		for (final OT ot : model.getAllOTs()) {
 			try {
 				allCapacities.add(getCapacityForRoomOnDay(ot, day));
 			} catch (final UnsupportedOperationException ex) {
