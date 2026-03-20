@@ -311,7 +311,7 @@ mapping roomDayLoad to dayRoomTuple {
 // Mapping that is true if gender `g` is contained in room `r` on day `d`
 mapping roomDayGender to dayRoomGender;
 
-// Mapping that is true if operating theater `ot` has at least one operation on day `d`
+// Mapping that is true if operating theater `relatedOT` has at least one operation on day `d`
 mapping openedOTDay to dayOperatingTheaterTuple;
 
 //
@@ -564,7 +564,7 @@ function admissionDelay with aadp {
 // S5 Open OTs: The number of OTs opened on each day should be minimized.
 // Note that if an OT has no patients assigned for a particular day, it should
 // not open on that day.
-function openOts with openedOTDay {
+function openOTs with openedOTDay {
 	context.value
 }
 
@@ -573,5 +573,5 @@ objective : min {
 	0
 	+ functions.electiveUnscheduledPatients * types.Weight->sum(element.unscheduledOptional)
 	+ functions.admissionDelay * types.Weight->sum(element.patientDelay)
-	+ functions.openOts * types.Weight->sum(element.openOperatingTheater)
+	+ functions.openOTs * types.Weight->sum(element.openOperatingTheater)
 }
