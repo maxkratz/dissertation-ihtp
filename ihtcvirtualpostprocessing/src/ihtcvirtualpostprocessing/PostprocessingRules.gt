@@ -6,16 +6,16 @@ import
 //
 
 rule virtualShiftToWorkload_to_derived {
-	-- v: VirtualShiftToWorkload {
+	-- v : VirtualShiftToWorkload {
 		---shift -> s
 		---workload -> w
 	}
 
-	s: Shift {
+	s : Shift {
 		++ -derivedWorkloads -> w
 	}
 
-	w: Workload {
+	w :  Workload {
 		++ -derivedShift -> s
 	// Explicitly set the opposite edge
 	}
@@ -24,7 +24,7 @@ rule virtualShiftToWorkload_to_derived {
 }
 
 rule removeVirtualShiftToWorkload {
-	-- v: VirtualShiftToWorkload
+	-- v : VirtualShiftToWorkload
 	# v.isSelected == false
 }
 
@@ -33,16 +33,16 @@ rule removeVirtualShiftToWorkload {
 //
 
 rule virtualShiftToRoster_to_derived {
-	-- v: VirtualShiftToRoster {
+	-- v : VirtualShiftToRoster {
 		---shift -> s
 		---roster -> r
 	}
 
-	s: Shift {
+	s : Shift {
 		++ -derivedRoster -> r
 	}
 
-	r: Roster {
+	r : Roster {
 		++ -derivedShifts -> s
 	// Explicitly set the opposite edge
 	}
@@ -51,8 +51,7 @@ rule virtualShiftToRoster_to_derived {
 }
 
 rule removeVirtualShiftToRoster {
-	-- v: VirtualShiftToRoster
-
+	-- v : VirtualShiftToRoster
 	# v.isSelected == false
 }
 
@@ -61,16 +60,16 @@ rule removeVirtualShiftToRoster {
 //
 
 rule virtualWorkloadToOpTime_to_derived {
-	-- v: VirtualWorkloadToOpTime {
+	-- v : VirtualWorkloadToOpTime {
 		---workload -> w
 		---opTime -> op
 	}
 
-	w: Workload {
+	w : Workload {
 		++ -derivedOpTimes -> op
 	}
 
-	op: OpTime {
+	op : OpTime {
 		++ -derivedWorkloads -> w
 	// Explicitly set the opposite edge
 	}
@@ -79,8 +78,7 @@ rule virtualWorkloadToOpTime_to_derived {
 }
 
 rule removeVirtualWorkloadToOpTime {
-	-- v: VirtualWorkloadToOpTime
-
+	-- v : VirtualWorkloadToOpTime
 	# v.isSelected == false
 }
 
@@ -89,16 +87,16 @@ rule removeVirtualWorkloadToOpTime {
 //
 
 rule virtualOpTimeToCapacity_to_derived {
-	-- v: VirtualOpTimeToCapacity {
+	-- v : VirtualOpTimeToCapacity {
 		---capacity -> c
 		---opTime -> op
 	}
 
-	op: OpTime {
+	op : OpTime {
 		++ -derivedCapacities -> c
 	}
 
-	c: Capacity {
+	c : Capacity {
 		++ -derivedOpTimes -> op
 	// Explicitly set the opposite edge
 	}
@@ -107,8 +105,7 @@ rule virtualOpTimeToCapacity_to_derived {
 }
 
 rule removeVirtualOpTimeToCapacity {
-	-- v: VirtualOpTimeToCapacity
-
+	-- v : VirtualOpTimeToCapacity
 	# v.isSelected == false
 }
 
@@ -117,16 +114,16 @@ rule removeVirtualOpTimeToCapacity {
 //
 
 rule virtualWorkloadToCapacity {
-	-- v: VirtualWorkloadToCapacity {
+	-- v : VirtualWorkloadToCapacity {
 		---capacity -> c
 		---workload -> w
 	}
 
-	w: Workload {
+	w : Workload {
 		++ -derivedCapacity -> c
 	}
 
-	c: Capacity {
+	c : Capacity {
 		++ -derivedWorkloads -> w
 	// Explicitly set the opposite edge
 	}
@@ -135,7 +132,6 @@ rule virtualWorkloadToCapacity {
 }
 
 rule removeVirtualWorkloadToCapacity {
-	-- v: VirtualWorkloadToCapacity
-
+	-- v : VirtualWorkloadToCapacity
 	# v.isSelected == false
 }
