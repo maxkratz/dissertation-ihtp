@@ -20,8 +20,6 @@ config {
 	randomSeed := true [value := 0];
 	presolve := auto;
 	debugOutput := true;
-	// lpOutput := true [path := "gurobi.lp"];
-//	threadCount := true [value := 4];
 }
 
 //
@@ -321,88 +319,57 @@ mapping otDayOpened to dayOperatingTheaterTuple;
 // This constraints sets the respective `otDayOpenend` mapping to 1
 // if and only if at least one operation takes place in `ot` on day `d`.
 constraint with otDayOpened {
-	mappings.asp->filter(element.nodes.d == context.nodes.d & element.nodes.ot == context.nodes.ot)->sum(element.value)
-	<=
-	1000 * context.value
-	&
-	mappings.asp->filter(element.nodes.d == context.nodes.d & element.nodes.ot == context.nodes.ot)->sum(element.value)
-	>=
-	context.value
+	[
+		mappings.asp->filter(element.nodes.d == context.nodes.d & element.nodes.ot == context.nodes.ot)->sum(element.value) >= 1
+	]
+	<=>
+	[
+		context.value == 1
+	]
 }
 
 // This constraint sets the respective `roomDayGender` mapping to 1
 // if and only if the gender `g` is present in room `r` on day `d`.
 constraint with roomDayGender {
-	mappings.roomDayPatientLoad->filter( //
-		element.nodes.d == context.nodes.d //
-		& element.nodes.r == context.nodes.r //
-		& element.nodes.p.gender == context.nodes.g.name //
-	)->sum(element.value)
-	+
-	patterns.occupantRoomDay->filter( //
-		element.nodes.d == context.nodes.d //
-		& element.nodes.r == context.nodes.r //
-		& element.nodes.o.gender == context.nodes.g.name //
-	)->sum(1)
-	<=
-	1000 * context.value
-	&
-	mappings.roomDayPatientLoad->filter( //
-		element.nodes.d == context.nodes.d //
-		& element.nodes.r == context.nodes.r //
-		& element.nodes.p.gender == context.nodes.g.name //
-	)->sum(element.value)
-	+
-	patterns.occupantRoomDay->filter( //
-		element.nodes.d == context.nodes.d //
-		& element.nodes.r == context.nodes.r //
-		& element.nodes.o.gender == context.nodes.g.name //
-	)->sum(1)
-	>=
-	context.value
+	[
+		mappings.roomDayPatientLoad->filter( //
+			element.nodes.d == context.nodes.d //
+			& element.nodes.r == context.nodes.r //
+			& element.nodes.p.gender == context.nodes.g.name //
+		)->sum(element.value)
+		+
+		patterns.occupantRoomDay->filter( //
+			element.nodes.d == context.nodes.d //
+			& element.nodes.r == context.nodes.r //
+			& element.nodes.o.gender == context.nodes.g.name //
+		)->sum(1)
+		>= 1
+	]
+	<=>
+	[
+		context.value == 1
+	]
 }
 
 // If a patient `p` is scheduled for room `r` on a day `d` that is within the
 // patients scheduled time frame, set the respective mapping variable to 1.
 constraint with roomDayPatientLoad {
-	// The following three sub constraints are the complex workaround for not having
-	// to use an Boolean equivalence. This reduces the matrix sizes massively.
-	//
-	// If patient `p` gets assign to room `r`
-	// and if patient `p` is assigned to the correct time frame,
-	// set the context value to 1.
-	mappings.aadp->filter( //
-		element.nodes.p == context.nodes.p //
-		& element.nodes.d.id - 1 <= context.nodes.d.id //
-		& element.nodes.d.id + context.nodes.p.lengthOfStay - 1 >= context.nodes.d.id //
-	)->sum(element.value)
-	+
-	mappings.arp->filter( //
-		element.nodes.p == context.nodes.p //
-		& element.nodes.r == context.nodes.r //
-	)->sum(element.value)
-	- 1
-	<=
-	context.value
-	&
-
-	// If the context value is 1, the patient must have to correct time frame.
-	mappings.aadp->filter( //
-		element.nodes.p == context.nodes.p //
-		& element.nodes.d.id - 1 <= context.nodes.d.id //
-		& element.nodes.d.id + context.nodes.p.lengthOfStay - 1 >= context.nodes.d.id //
-	)->sum(element.value)
-	>=
-	context.value
-	&
-
-	// If the context value is 1, the patient must be located in the correct room.
-	mappings.arp->filter( //
-		element.nodes.p == context.nodes.p //
-		& element.nodes.r == context.nodes.r //
-	)->sum(element.value)
-	>=
-	context.value
+	[
+		mappings.aadp->filter( //
+			element.nodes.p == context.nodes.p //
+			& element.nodes.d.id - 1 <= context.nodes.d.id //
+			& element.nodes.d.id + context.nodes.p.lengthOfStay - 1 >= context.nodes.d.id //
+		)->sum(element.value) >= 1
+		&
+		mappings.arp->filter( //
+			element.nodes.p == context.nodes.p //
+			& element.nodes.r == context.nodes.r //
+		)->sum(element.value) >= 1
+	]
+	<=>
+	[
+		context.value == 1
+	]
 }
 
 // The room `r` has a specific load (=number of patients and occupants)
@@ -570,17 +537,18 @@ constraint with roomShiftTuple {
 //
 // This constraint ensures that there is at least one nurse per room that contains patients in a shift.
 constraint with roomShiftTuple {
-	// This is a shortcut specification for the following constraint:
 	// If there is at least one patient `p` assigned to room `r` on day `d`,
 	// there must be a nurse assigned to room `r` in shift `s` (that is part of day `d`).
-	mappings.roomDayLoad->filter( //
-		element.nodes.r == context.nodes.r //
-		& element.nodes.d == context.nodes.s.day //
-	)->sum(element.variables.load)
-	<=
-	mappings.anrs->filter(element.nodes.r == context.nodes.r & element.nodes.s == context.nodes.s)->sum(element.value)
-	*
-	1000
+	[
+		mappings.roomDayLoad->filter( //
+			element.nodes.r == context.nodes.r //
+			& element.nodes.d == context.nodes.s.day //
+		)->sum(element.variables.load) >= 1
+	]
+	<=>
+	[
+		mappings.anrs->filter(element.nodes.r == context.nodes.r & element.nodes.s == context.nodes.s)->sum(element.value) == 1
+	]
 }
 
 //
