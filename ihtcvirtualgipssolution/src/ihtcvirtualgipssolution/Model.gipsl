@@ -272,7 +272,7 @@ mapping ageGroupsInRoom to ageGroupsRoomDay {
 	var minAgeGroup : EBoolean
 };
 
-// minAgeGroup: True if the patient of the current Match has the smallest age group in that room.
+// maxAgeGroup: True if the patient of the current Match has the largest age group in that room.
 mapping noGreaterAgeGroupInRoom to ageGroupsRoomDay;
 
 // minAgeGroup: True if the patient of the current Match has the smallest age group in that room.
