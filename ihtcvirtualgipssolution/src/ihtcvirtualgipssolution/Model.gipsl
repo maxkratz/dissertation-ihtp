@@ -529,8 +529,8 @@ constraint with selectedOccupantNodes {
 
 // V2.1: The virtual Node "VirtualWorkloadToShift" can only be added to the final model if
 // the required Node "VirtualWorkloadToCapacity" is also selected (isSelected = true).
-constraint with selectShiftToFirstWorkload {
-	mappings.selectedShiftToFirstWorkload->join((vsw, vsw), (vwc, vwc))->sum(element.value)
+constraint with selectedShiftToFirstWorkload {
+	context.value
 	<=
 	mappings.selectedOperationDay->join((vwc, vwc))->sum(element.value)
 //	&
