@@ -760,7 +760,7 @@ function calculateUnqualifiedNurses with assignedPatientsToRoom {
 constraint with assignedPatientsToRoom {
 	context.variables.penalizedSkillDiff
 	>=
-	mappings.assignedPatientsToRoom->join((vsw, vsw))->sum(element.value * element.nodes.w.minNurseSkill)
+	context.value * context.nodes.w.minNurseSkill
 	-
 	mappings.selectedShiftToRoster->join((s, s))->sum(element.value * element.nodes.vsr.roster.nurse.skillLevel)
 }
