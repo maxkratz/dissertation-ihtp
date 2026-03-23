@@ -270,13 +270,15 @@ mapping otsPerSurgeon to surgeonOptimeTuple {
 mapping ageGroupsInRoom to ageGroupsRoomDay {
 	var maxAgeGroup : EBoolean
 	var minAgeGroup : EBoolean
+	var noGreaterAgeGroupInRoom : EBoolean
+	var noSmallerAgeGroupInRoom : EBoolean
 };
 
 // maxAgeGroup: True if the patient of the current Match has the largest age group in that room.
-mapping noGreaterAgeGroupInRoom to ageGroupsRoomDay;
+//mapping noGreaterAgeGroupInRoom to ageGroupsRoomDay;
 
 // minAgeGroup: True if the patient of the current Match has the smallest age group in that room.
-mapping noSmallerAgeGroupInRoom to ageGroupsRoomDay;
+//mapping noSmallerAgeGroupInRoom to ageGroupsRoomDay;
 
 // mapping that holds the information what workloads a roster is responsible for / assigned to.
 mapping assignedNursesToWorkload to nursetoWorkload;
@@ -569,28 +571,43 @@ constraint with ageGroupsInRoom {
 }
 
 // U17: Sets a auxiliary mapping for expressing U9 without a boolean equivalence.
-constraint with noSmallerAgeGroupInRoom {
+//constraint with noSmallerAgeGroupInRoom {
+//	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
+//		element.nodes.ag.group < context.nodes.ag.group
+//	)->sum(element.value)
+//	>=
+//	1 - context.value
+//
+//	&
+//
+//	(1 - context.value) * 1000
+//	>=
+//	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
+//		element.nodes.ag.group < context.nodes.ag.group
+//	)->sum(element.value)
+//}
+constraint with ageGroupsInRoom {
 	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
 		element.nodes.ag.group < context.nodes.ag.group
 	)->sum(element.value)
 	>=
-	1 - context.value
+	1 - context.variables.noSmallerAgeGroupInRoom
 
 	&
 
-	(1 - context.value) * 1000
+	(1 - context.variables.noSmallerAgeGroupInRoom) * 1000
 	>=
 	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
 		element.nodes.ag.group < context.nodes.ag.group
 	)->sum(element.value)
-
 }
 
 // U9: Sets the variable to true if the age group is the smallest in the room on that day.
 constraint with ageGroupsInRoom {
 	mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
 	+
-	mappings.noSmallerAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+//	mappings.noSmallerAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	context.variables.noSmallerAgeGroupInRoom
   	<=
  	1 + context.variables.minAgeGroup
 
@@ -598,22 +615,38 @@ constraint with ageGroupsInRoom {
 
  	mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
 	+
-	mappings.noSmallerAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+//	mappings.noSmallerAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	context.variables.noSmallerAgeGroupInRoom
 	>=
 	2 * context.variables.minAgeGroup
 }
 
-// U18: Sets a auxiliary mapping for expressing U10 without a boolean equivalence.
-constraint with noGreaterAgeGroupInRoom {
+//// U18: Sets a auxiliary mapping for expressing U10 without a boolean equivalence.
+//constraint with noGreaterAgeGroupInRoom {
+//	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
+//		element.nodes.ag.group > context.nodes.ag.group
+//	)->sum(element.value)
+//	>=
+//	1 - context.value
+//
+//	&
+//
+//	(1 - context.value) * 1000
+//	>=
+//	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
+//		element.nodes.ag.group > context.nodes.ag.group
+//	)->sum(element.value)
+//}
+constraint with ageGroupsInRoom {
 	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
 		element.nodes.ag.group > context.nodes.ag.group
 	)->sum(element.value)
 	>=
-	1 - context.value
+	1 - context.variables.noGreaterAgeGroupInRoom
 
 	&
 
-	(1 - context.value) * 1000
+	(1 - context.variables.noGreaterAgeGroupInRoom) * 1000
 	>=
 	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
 		element.nodes.ag.group > context.nodes.ag.group
@@ -624,7 +657,8 @@ constraint with noGreaterAgeGroupInRoom {
 constraint with ageGroupsInRoom {
 	mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
 	+
-	mappings.noGreaterAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+//	mappings.noGreaterAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	context.variables.noGreaterAgeGroupInRoom
   	<=
  	1 + context.variables.maxAgeGroup
 
@@ -632,7 +666,8 @@ constraint with ageGroupsInRoom {
 
  	mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
 	+
-	mappings.noGreaterAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+//	mappings.noGreaterAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	context.variables.noGreaterAgeGroupInRoom
   	>=
  	2 * context.variables.maxAgeGroup
 }
