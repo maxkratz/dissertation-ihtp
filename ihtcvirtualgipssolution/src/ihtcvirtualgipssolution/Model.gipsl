@@ -332,12 +332,12 @@ constraint with assignedGenderToRoomOnShift {
 	context.value
 	<=
 //	mappings.assignedPatientsToRoom->join((s, s))->filter(element.nodes.p.gender == context.nodes.g.name)->sum(element.value)
-	types.VirtualShiftToWorkload->filter(element.shift == context.nodes.s & element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
+	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
 
 	&
 
 //	mappings.assignedPatientsToRoom->join((s, s))->filter(element.nodes.p.gender == context.nodes.g.name)->sum(element.value)
-	types.VirtualShiftToWorkload->filter(element.shift == context.nodes.s & element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
+	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
 	<=
 	context.value * 1000
 
@@ -576,7 +576,7 @@ constraint with countPatientsForRoom {
 	context.variables.patientCount
 	==
 //	mappings.assignedPatientsToRoom->join((s, s))->sum(element.value)
-	types.VirtualShiftToWorkload->filter(element.shift == context.nodes.s)->sum(element.variables.isSelected)
+	types.VirtualShiftToWorkload->join((shift,s))->sum(element.variables.isSelected)
 }
 
 //
