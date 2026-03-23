@@ -700,7 +700,7 @@ constraint with noSmallerAgeGroupInRoom {
 
 // U9: Sets the variable to true if the age group is the smallest in the room on that day.
 constraint with ageGroupsInRoom {
-	mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	context.value
 	+
 	mappings.noSmallerAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
   	<=
@@ -708,7 +708,7 @@ constraint with ageGroupsInRoom {
 
  	&
 
- 	mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+ 	context.value
 	+
 	mappings.noSmallerAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
 	>=
@@ -734,7 +734,7 @@ constraint with noGreaterAgeGroupInRoom {
 
 // U10: Sets the variable to true if the age group is the biggest in the room on that day.
 constraint with ageGroupsInRoom {
-	mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	context.value
 	+
 	mappings.noGreaterAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
   	<=
@@ -742,7 +742,7 @@ constraint with ageGroupsInRoom {
 
  	&
 
- 	mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+ 	context.value
 	+
 	mappings.noGreaterAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
   	>=
