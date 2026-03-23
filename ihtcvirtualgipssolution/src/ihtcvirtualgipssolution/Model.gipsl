@@ -554,8 +554,8 @@ constraint with selectedOperationDay {
 // V3: The stay of a patient can be extended by selecting a following Node "VirtualWorkloadToShift"
 // that is connected to the previous links between the patients workloads to shifts.
 // The following node can only be selected if the previous is already set to true.
-constraint with selectExtendingShiftToFirstWorkload {
-	mappings.selectedExtendingShiftToFirstWorkload->join((nextvsw, nextvsw))->sum(element.value)
+constraint with selectedExtendingShiftToFirstWorkload {
+	context.value
 	<=
 	mappings.selectedExtendingShiftToFirstWorkload->join((nextvsw, prevvsw))->sum(element.value)
 	+
@@ -567,7 +567,7 @@ constraint with selectExtendingShiftToFirstWorkload {
 	+
 	mappings.selectedShiftToFirstWorkload->join((vsw, prevvsw))->sum(element.value)
 	<=
-	mappings.selectedExtendingShiftToFirstWorkload->join((nextvsw, nextvsw))->sum(element.value) * 2
+	context.value * 2
 
 //	Transformed version of the following boolean implication
 //	mappings.selectedExtendingShiftToFirstWorkload->filter(
