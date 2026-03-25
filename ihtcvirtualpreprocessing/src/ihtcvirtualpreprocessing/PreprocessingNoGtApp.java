@@ -133,7 +133,7 @@ public class PreprocessingNoGtApp {
 
 				final VirtualShiftToWorkload v = IhtcvirtualmetamodelFactory.eINSTANCE.createVirtualShiftToWorkload();
 				v.setIsSelected(false);
-				v.setWasImported(true);
+				v.setPreselected(true);
 				v.setShift(shift);
 				v.setWorkload(workload);
 				// Set requires and enables edges
@@ -318,7 +318,7 @@ public class PreprocessingNoGtApp {
 										final VirtualShiftToWorkload v = IhtcvirtualmetamodelFactory.eINSTANCE
 												.createVirtualShiftToWorkload();
 										v.setIsSelected(false);
-										v.setWasImported(false);
+										v.setPreselected(false);
 										v.setShift(shift);
 										v.setWorkload(patient.getFirstWorkload());
 										v.getRequires_virtualWorkloadToCapacity()
@@ -389,7 +389,7 @@ public class PreprocessingNoGtApp {
 		while (w != null && s != null) {
 			final VirtualShiftToWorkload vNew = IhtcvirtualmetamodelFactory.eINSTANCE.createVirtualShiftToWorkload();
 			vNew.setIsSelected(false);
-			vNew.setWasImported(false);
+			vNew.setPreselected(false);
 			vNew.setShift(s);
 			vNew.setWorkload(w);
 			vNew.setRequires_virtualShiftToWorkload(v);
