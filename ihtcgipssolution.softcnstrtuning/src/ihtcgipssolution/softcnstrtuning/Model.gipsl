@@ -27,32 +27,32 @@ config {
 //
 
 rule assignNurseToRoomShift {
-	n: Nurse {
+	n : Nurse {
 		-shiftMaxLoads -> sml
 	}
 
-	s: Shift
+	s : Shift
 
-	r: Room
+	r : Room
 
-	++ rsna: RoomShiftNurseAssignment {
+	++ rsna : RoomShiftNurseAssignment {
 		++ -nurse -> n
 		++ -shift -> s
 		++ -room -> r
 	}
 
-	sml: NurseShiftMaxLoad {
+	sml : NurseShiftMaxLoad {
 		-shift -> s
 	}
 	# sml.maxLoad > 0
 }
 
 rule assignAdmissionDayToPatient {
-	p: Patient {
+	p : Patient {
 		++ -admissionDay -> d
 	}
 
-	d: Day
+	d : Day
 	# p.surgeryReleaseDay <= d.id
 	# p.surgeryDueDate >= d.id
 }
@@ -60,132 +60,132 @@ rule assignAdmissionDayToPatient {
 // H2: Compatible rooms: Patients can only be assigned to one of
 // their compatible rooms
 pattern roomPatientIncompatible {
-	p: Patient {
+	p : Patient {
 		-incompatibleRooms -> r
 	}
 
-	r: Room
+	r : Room
 }
 
 condition roomNotIncompatible = forbid roomPatientIncompatible
 
 rule assignRoomToPatient {
-	p: Patient {
+	p : Patient {
 		++ -assignedRoom -> r
 	}
 
-	r: Room
+	r : Room
 }
 when roomNotIncompatible
 
 rule assignSurgeryToPatient {
-	p: Patient {
+	p : Patient {
 		++ -surgeryAssignment -> sa
 		-surgeon -> s
 	}
 
-	s: Surgeon {
+	s : Surgeon {
 		-availabilities -> as
 	}
 
-	d: Day
+	d : Day
 
-	relatedOT: OperatingTheater {
+	relatedOT : OperatingTheater {
 		-availabilities -> aOT
 	}
 
-	++ sa: SurgeryAssignment {
+	++ sa : SurgeryAssignment {
 		++ -patient -> p
 		++ -surgeon -> s
 		++ -operationTheater -> relatedOT
 		++ -day -> d
 	}
 
-	aOT: OperatingTheaterAvailability {
+	aOT : OperatingTheaterAvailability {
 		-day -> d
 	}
 
 	# aOT.availability > 0
 	
-	as: SurgeonAvailability {
+	as : SurgeonAvailability {
 		-day -> d
 	}
 	# as.availability > 0
 }
 
 pattern dayRoomTuple {
-	d: Day
-	r: Room
+	d : Day
+	r : Room
 }
 
 pattern daySurgeonTuple {
-	d: Day
-	s: Surgeon
+	d : Day
+	s : Surgeon
 }
 
 pattern dayOperatingTheaterAvailabilityTriple {
-	d: Day
+	d:  Day
 
-	relatedOT: OperatingTheater {
+	relatedOT : OperatingTheater {
 		-availabilities -> aOT
 	}
 
-	aOT: OperatingTheaterAvailability
+	aOT : OperatingTheaterAvailability
 	# aOT.availability > 0
 }
 
 pattern dayOperatingTheaterTuple {
-	d: Day
-	relatedOT: OperatingTheater
+	d : Day
+	relatedOT : OperatingTheater
 }
 
 pattern findMandatoryPatient {
-	p: Patient
+	p : Patient
 	# p.mandatory == true
 }
 
 pattern findOptionalPatient {
-	p: Patient
+	p : Patient
 	# p.mandatory == false
 }
 
 pattern dayPatientTuple {
-	p: Patient
+	p : Patient
 
-	d: Day
+	d : Day
 	# p.surgeryReleaseDay <= d.id
 	# p.surgeryDueDate + p.lengthOfStay - 1 >= d.id
 }
 
 pattern roomShiftTuple {
-	r: Room
-	s: Shift
+	r : Room
+	s : Shift
 }
 
 pattern patientRoomDay {
-	r: Room
+	r : Room
 
-	p: Patient
+	p : Patient
 
-	d: Day
+	d : Day
 	# p.surgeryReleaseDay <= d.id
 	# p.surgeryDueDate + p.lengthOfStay - 1 >= d.id
 }
 
 pattern occupantRoomDay {
-	r: Room
+	r : Room
 
-	o: Occupant
+	o : Occupant
 
-	d: Day
+	d : Day
 	# r.name == o.roomId
 	# o.lengthOfStay >= d.id
 }
 
 pattern dayRoomGender {
-	d: Day
-	r: Room
-	g: Gender
+	d : Day
+	r : Room
+	g : Gender
 }
 
 //
