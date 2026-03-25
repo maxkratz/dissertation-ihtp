@@ -5,9 +5,9 @@ import "platform:/resource/ihtcmetamodel/model/Ihtcmetamodel.ecore"
 // This specification extends the "hard-only" implementation (H1-H6)
 // and also takes the three most expensive optional constraints
 // into account:
-// - optional patients (H8)
-// - optional delay (H7)
-// - optional open OTs (H6)
+// - optional patients (S8)
+// - optional delay (S7)
+// - optional open OTs (S6)
 //
 
 //
@@ -20,8 +20,6 @@ config {
 	randomSeed := true [value := 0];
 	presolve := auto;
 	debugOutput := true;
-	// lpOutput := true [path := "gurobi.lp"];
-//	threadCount := true [value := 4];
 }
 
 //
@@ -29,12 +27,6 @@ config {
 //
 
 rule assignNurseToRoomShift {
-	h: Hospital {
-		-nurses -> n
-		-shifts -> s
-		-rooms -> r
-	}
-
 	n: Nurse {
 		-shiftMaxLoads -> sml
 	}
@@ -56,11 +48,6 @@ rule assignNurseToRoomShift {
 }
 
 rule assignAdmissionDayToPatient {
-	h: Hospital {
-		-patients -> p
-		-days -> d
-	}
-
 	p: Patient {
 		++ -admissionDay -> d
 	}
@@ -73,11 +60,6 @@ rule assignAdmissionDayToPatient {
 // H2: Compatible rooms: Patients can only be assigned to one of
 // their compatible rooms
 pattern roomPatientIncompatible {
-	h: Hospital {
-		-patients -> p
-		-rooms -> r
-	}
-
 	p: Patient {
 		-incompatibleRooms -> r
 	}
@@ -88,11 +70,6 @@ pattern roomPatientIncompatible {
 condition roomNotIncompatible = forbid roomPatientIncompatible
 
 rule assignRoomToPatient {
-	h: Hospital {
-		-patients -> p
-		-rooms -> r
-	}
-
 	p: Patient {
 		++ -assignedRoom -> r
 	}
@@ -102,13 +79,6 @@ rule assignRoomToPatient {
 when roomNotIncompatible
 
 rule assignSurgeryToPatient {
-	h: Hospital {
-		-patients -> p
-		-surgeons -> s
-		-days -> d
-		-operatingTheaters -> relatedOT
-	}
-
 	p: Patient {
 		++ -surgeryAssignment -> sa
 		-surgeon -> s
@@ -144,33 +114,16 @@ rule assignSurgeryToPatient {
 }
 
 pattern dayRoomTuple {
-	h: Hospital {
-		-days -> d
-		-rooms -> r
-	}
-
 	d: Day
-
 	r: Room
 }
 
 pattern daySurgeonTuple {
-	h: Hospital {
-		-days -> d
-		-surgeons -> s
-	}
-
 	d: Day
-
 	s: Surgeon
 }
 
 pattern dayOperatingTheaterAvailabilityTriple {
-	h: Hospital {
-		-days -> d
-		-operatingTheaters -> relatedOT
-	}
-
 	d: Day
 
 	relatedOT: OperatingTheater {
@@ -182,40 +135,21 @@ pattern dayOperatingTheaterAvailabilityTriple {
 }
 
 pattern dayOperatingTheaterTuple {
-	h: Hospital {
-		-days -> d
-		-operatingTheaters -> relatedOT
-	}
-
 	d: Day
-
 	relatedOT: OperatingTheater
 }
 
 pattern findMandatoryPatient {
-	h: Hospital {
-		-patients -> p
-	}
-
 	p: Patient
 	# p.mandatory == true
 }
 
 pattern findOptionalPatient {
-	h: Hospital {
-		-patients -> p
-	}
-
 	p: Patient
 	# p.mandatory == false
 }
 
 pattern dayPatientTuple {
-	h: Hospital {
-		-patients -> p
-		-days -> d
-	}
-
 	p: Patient
 
 	d: Day
@@ -224,23 +158,11 @@ pattern dayPatientTuple {
 }
 
 pattern roomShiftTuple {
-	h: Hospital {
-		-rooms -> r
-		-shifts -> s
-	}
-
 	r: Room
-
 	s: Shift
 }
 
 pattern patientRoomDay {
-	h: Hospital {
-		-rooms -> r
-		-patients -> p
-		-days -> d
-	}
-
 	r: Room
 
 	p: Patient
@@ -251,12 +173,6 @@ pattern patientRoomDay {
 }
 
 pattern occupantRoomDay {
-	h: Hospital {
-		-rooms -> r
-		-occupants -> o
-		-days -> d
-	}
-
 	r: Room
 
 	o: Occupant
@@ -267,16 +183,8 @@ pattern occupantRoomDay {
 }
 
 pattern dayRoomGender {
-	h: Hospital {
-		-days -> d
-		-rooms -> r
-		-genders -> g
-	}
-
 	d: Day
-
 	r: Room
-
 	g: Gender
 }
 
