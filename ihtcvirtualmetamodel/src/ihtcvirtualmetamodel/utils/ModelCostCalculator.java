@@ -37,7 +37,7 @@ public class ModelCostCalculator {
 		Objects.requireNonNull(model, "Given hospital model was null.");
 
 		int ageMixCost = 0;
-		for (final Room r : model.getRooms()) {
+		for (final Room r : model.getAllRooms()) {
 			for (final Shift s : r.getShifts()) {
 				// Only take shifts with type 'early' into account and ignore all other shifts
 				if (s.getShiftNo() % 3 != 0) {
@@ -94,7 +94,7 @@ public class ModelCostCalculator {
 		Objects.requireNonNull(model, "Given hospital model was null.");
 
 		int skillLevelCost = 0;
-		for (final Nurse n : model.getNurses()) {
+		for (final Nurse n : model.getAllNurses()) {
 			for (final Roster r : n.getRosters()) {
 				for (final Shift s : r.getDerivedShifts()) {
 					// all patients in this room
@@ -122,7 +122,7 @@ public class ModelCostCalculator {
 		int continuityCost = 0;
 
 		// Patients
-		for (final Patient p : model.getPatients()) {
+		for (final Patient p : model.getAllPatients()) {
 			final int localPatientCount = countPatientsNurses(model, p);
 			continuityCost += localPatientCount;
 		}
@@ -141,7 +141,7 @@ public class ModelCostCalculator {
 
 		int excessCost = 0;
 
-		for (final Nurse n : model.getNurses()) {
+		for (final Nurse n : model.getAllNurses()) {
 			// find all shifts a nurse works on
 			final Set<Shift> allWorkingShiftsOfNurse = new HashSet<Shift>();
 			n.getRosters().forEach(r -> r.getDerivedShifts().forEach(s -> allWorkingShiftsOfNurse.add(s)));
@@ -195,7 +195,7 @@ public class ModelCostCalculator {
 
 		int openOtCost = 0;
 
-		for (final OT ot : model.getOts()) {
+		for (final OT ot : model.getAllOTs()) {
 			// This assumes that there is at most one `Capacity` object per day per OT
 			for (final Capacity c : ot.getCapacities()) {
 				if (c.getDerivedOpTimes().size() > 0 || c.getDerivedWorkloads().size() > 0) {
@@ -218,7 +218,7 @@ public class ModelCostCalculator {
 
 		int surgeonTransferCost = 0;
 
-		for (final Surgeon s : model.getSurgeons()) {
+		for (final Surgeon s : model.getAllSurgeons()) {
 			for (final OpTime opTime : s.getOpTimes()) {
 				if (opTime.getDerivedCapacities().size() > 1) {
 					surgeonTransferCost += opTime.getDerivedCapacities().size() - 1;
@@ -240,7 +240,7 @@ public class ModelCostCalculator {
 
 		int admissionDelayCost = 0;
 
-		for (final Patient p : model.getPatients()) {
+		for (final Patient p : model.getAllPatients()) {
 			// check if patient was scheduled at all
 			if (p.getFirstWorkload().getDerivedShift() != null) {
 				if (shiftToDay(p.getFirstWorkload().getDerivedShift()) > p.getEarliestDay()) {
@@ -263,7 +263,7 @@ public class ModelCostCalculator {
 
 		int unscheduledPatientsCost = 0;
 
-		for (final Patient p : model.getPatients()) {
+		for (final Patient p : model.getAllPatients()) {
 			if (!p.isMandatory() && p.getFirstWorkload().getDerivedShift() == null) {
 				unscheduledPatientsCost++;
 			}
@@ -421,7 +421,7 @@ public class ModelCostCalculator {
 		Objects.requireNonNull(room, "Given room was null.");
 
 		final List<Patient> patientsInRoom = new ArrayList<Patient>();
-		for (final Patient p : model.getPatients()) {
+		for (final Patient p : model.getAllPatients()) {
 			// room and day must match
 			if (patientInRoomOnDay(p, room, day)) {
 				patientsInRoom.add(p);

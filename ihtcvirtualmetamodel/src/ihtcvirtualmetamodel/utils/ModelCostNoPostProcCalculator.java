@@ -81,7 +81,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 		Objects.requireNonNull(model, "Given hospital model was null.");
 
 		int skillLevelCost = 0;
-		for (final Nurse n : model.getNurses()) {
+		for (final Nurse n : model.getAllNurses()) {
 			for (final Roster r : n.getRosters()) {
 				for (final VirtualShiftToRoster vsr : r.getVirtualShift()) {
 					// Only look at selected virtual objects
@@ -112,7 +112,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 
 		int excessCost = 0;
 
-		for (final Nurse n : model.getNurses()) {
+		for (final Nurse n : model.getAllNurses()) {
 			// find all shifts a nurse works on
 			final Set<Shift> allWorkingShiftsOfNurse = new HashSet<Shift>();
 			n.getRosters().forEach(roster -> {
@@ -168,7 +168,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 
 		int openOtCost = 0;
 
-		for (final OT ot : model.getOts()) {
+		for (final OT ot : model.getAllOTs()) {
 			// This assumes that there is at most one `Capacity` object per day per OT
 			for (final Capacity c : ot.getCapacities()) {
 				boolean open = false;
@@ -199,7 +199,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 
 		int surgeonTransferCost = 0;
 
-		for (final Surgeon s : model.getSurgeons()) {
+		for (final Surgeon s : model.getAllSurgeons()) {
 			for (final OpTime opTime : s.getOpTimes()) {
 				int selectedVirtualCapacities = 0;
 				for (final VirtualOpTimeToCapacity vopc : opTime.getVirtualCapacity()) {
@@ -229,7 +229,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 
 		int admissionDelayCost = 0;
 
-		for (final Patient p : model.getPatients()) {
+		for (final Patient p : model.getAllPatients()) {
 			// check if patient was scheduled at all
 			boolean admitted = false;
 			int firstShiftNumber = -1;
@@ -261,7 +261,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 
 		int unscheduledPatientsCost = 0;
 
-		for (final Patient p : model.getPatients()) {
+		for (final Patient p : model.getAllPatients()) {
 			if (!p.isMandatory() || p.isIsOccupant()) {
 				boolean admitted = false;
 				for (final VirtualShiftToWorkload vsw : p.getFirstWorkload().getVirtualShift()) {

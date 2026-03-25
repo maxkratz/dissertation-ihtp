@@ -6,24 +6,24 @@
     <details key="documentation" value="TODO: Add documentation for ihtcvirtualmetamodel. Hint: You may copy this element in the Ecore editor to add documentation to EClasses, EOperations, ..."/>
   </eAnnotations>
   <eClassifiers xsi:type="ecore:EClass" name="Root">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="nurses" upperBound="-1"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="allNurses" upperBound="-1"
         eType="#//Nurse" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="rooms" upperBound="-1"
-        eType="#//Room" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="surgeons" upperBound="-1"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="allRooms" ordered="false"
+        upperBound="-1" eType="#//Room" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="allSurgeons" upperBound="-1"
         eType="#//Surgeon" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="ots" upperBound="-1" eType="#//OT"
-        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="allOTs" upperBound="-1"
+        eType="#//OT" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="weight" eType="#//Weight"
         containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="patients" upperBound="-1"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="allPatients" upperBound="-1"
         eType="#//Patient" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="period" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="genders" upperBound="-1"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="allGenders" upperBound="-1"
         eType="#//Gender" containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="days" upperBound="-1" eType="#//Day"
-        containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="ageGroups" upperBound="-1"
+    <eStructuralFeatures xsi:type="ecore:EReference" name="allDays" upperBound="-1"
+        eType="#//Day" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="allAgeGroups" upperBound="-1"
         eType="#//AgeGroup" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Nurse" eSuperTypes="#//NamedElement">
@@ -121,12 +121,13 @@
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="OT" eSuperTypes="#//NamedElement">
     <eStructuralFeatures xsi:type="ecore:EReference" name="capacities" upperBound="-1"
-        eType="#//Capacity" containment="true" eOpposite="#//Capacity/ot"/>
+        eType="#//Capacity" containment="true" eOpposite="#//Capacity/relatedOT"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Capacity">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="day" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="maxCapacity" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="ot" eType="#//OT" eOpposite="#//OT/capacities"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="relatedOT" eType="#//OT"
+        eOpposite="#//OT/capacities"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="derivedWorkloads" upperBound="-1"
         eType="#//Workload" eOpposite="#//Workload/derivedCapacity"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="derivedOpTimes" upperBound="-1"

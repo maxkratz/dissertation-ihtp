@@ -127,7 +127,7 @@ public class PreprocessingGtApp extends IhtcvirtualpreprocessingHiPEApp {
 		applyMatches(api.occupantsFirstWorkloadVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
 		applyMatches(api.extendOccupantsStayVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
 		applyMatches(api.assignNurseToRoomVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.assignSurgeonToOtVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
+		applyMatches(api.assignSurgeonToOTVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
 		applyMatches(api.fixOperationDayOpTimeVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
 		applyMatches(api.fixOperationDayCapacityVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);
 		applyMatches(api.assignPatientToRoomVirtual_preproc(), GT_RULE_APPLICATION_LIMIT);

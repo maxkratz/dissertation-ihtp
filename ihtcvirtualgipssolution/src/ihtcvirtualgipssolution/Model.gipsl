@@ -77,7 +77,11 @@ rule selectOperationDay_select {
 
 	// Notice: the `Capacity` object cannot be omitted because it constraints
 	// `vwc` and `vopc` to deal with the same OT.
-	c : Capacity
+	c : Capacity {
+		- relatedOT -> relatedOT
+	}
+
+	relatedOT : OT
 }
 
 // NPA: Rule that selects a `VirtualShiftToRoster` node to be adopted in the
@@ -171,9 +175,9 @@ pattern findRoster {
 
 // Used in a mapping to save the information if a surgeon is operating in a
 // specific OT for each day.
-pattern opTimeOtTuple {
+pattern opTimeOTTuple {
 	op : OpTime
-	ot : OT
+	inOT : OT
 }
 
 // Pattern used for a Mapping to calculate what age groups are present in a
@@ -259,13 +263,13 @@ mapping openOTs to findCapacity;
 
 // Mapping that holds the information if a surgeon operates in a specific OT
 // on a specific day.
-mapping otForSurgeon to opTimeOtTuple;
+mapping surgeonInOT to opTimeOTTuple;
 
 // Mapping that counts how many OTs a surgeon is assigned to on a specific
 // day.
 // `penalizedOTs`: A penalty is applied if a surgeon has more than 1 assigned
 // OT per day. Maximum of 0 and otCount - 1.
-mapping otsPerSurgeon to findOpTime {
+mapping surgeonPenalizedOTs to findOpTime {
 	var penalizedOTs : EInt
 };
 
@@ -459,11 +463,8 @@ constraint with selectedOccupantNodes {
 // V2.1: The virtual node `VirtualWorkloadToShift` can only be added to the
 // final model if the required node `VirtualWorkloadToCapacity` is also
 // selected (`isSelected = true`).
-constraint with selectShiftToFirstWorkload_select {
-	mappings.selectedShiftToFirstWorkload->filter(
-		element.nodes.vsw == context.nodes.vsw &
-		element.nodes.vwc == context.nodes.vwc
-	)->sum(element.value) >= 1
+constraint with selectedShiftToFirstWorkload {
+	context.value == 1
 	=>
 	mappings.selectedOperationDay->filter(
 		element.nodes.vwc == context.nodes.vwc
@@ -485,10 +486,8 @@ constraint with selectedOperationDay {
 // `VirtualWorkloadToShift` that is connected to the previous links between
 // the patients workloads to shifts.
 // The following node must be selected if the previous is set to true.
-constraint with selectExtendingShift_select {
-	mappings.selectedExtendingShiftToFirstWorkload->filter(
-		element.nodes.nextvsw == context.nodes.nextvsw
-	)->sum(element.value) == 1
+constraint with selectedExtendingShiftToFirstWorkload {
+	context.value == 1
 	<=>
 	[
 		mappings.selectedExtendingShiftToFirstWorkload->filter(
@@ -640,9 +639,7 @@ function calculateUnqualifiedNurses with assignedPatientsToRoom {
 constraint with assignedPatientsToRoom {
 	context.variables.penalizedSkillDiff
 	>=
-	mappings.assignedPatientsToRoom->filter(
-		element.nodes.vsw == context.nodes.vsw
-	)->sum(element.value * element.nodes.vsw.workload.minNurseSkill)
+	context.value * context.nodes.vsw.workload.minNurseSkill
 	-
 	mappings.selectedShiftToRoster->filter(
 		element.nodes.vsr.shift == context.nodes.vsw.shift
@@ -720,15 +717,15 @@ constraint with openOTs {
 
 // S6: The number of different OTs a surgeon is assigned to per working day
 // should be minimized.
-function calculateOtsPerSurgeon with otsPerSurgeon {
+function calculateOTsPerSurgeon with surgeonPenalizedOTs {
 	context.variables.penalizedOTs
 }
 
 // U5: Sets the mapping to true if the surgeon operates in the OT on that day.
-constraint with otForSurgeon {
+constraint with surgeonInOT {
 	mappings.selectedOperationDay->filter(
 		element.nodes.vwop.opTime == context.nodes.op &
-		element.nodes.vwc.capacity.ot == context.nodes.ot
+		element.nodes.vwc.capacity.relatedOT == context.nodes.inOT
 	)->sum(element.value) >= 1
 	<=>
 	context.value == 1
@@ -736,10 +733,10 @@ constraint with otForSurgeon {
 
 // U6: Counts the OTs per surgeon for each day, which must be at greater or
 // equal to 0.
-constraint with otsPerSurgeon {
+constraint with surgeonPenalizedOTs {
 	context.variables.penalizedOTs
 	>=
-	mappings.otForSurgeon->filter(
+	mappings.surgeonInOT->filter(
 		element.nodes.op == context.nodes.op
 	)->sum(element.value) - 1
 
@@ -780,7 +777,7 @@ objective : min {
 		* types.Weight->sum(element.nurseExcessiveWorkload)
 	+ functions.calculateOpenOTs
 		* types.Weight->sum(element.openOperatingTheater)
-	+ functions.calculateOtsPerSurgeon
+	+ functions.calculateOTsPerSurgeon
 		* types.Weight->sum(element.surgeonTransfer)
 	+ functions.calculateWaitTime
 		* types.Weight->sum(element.patientDelay)
