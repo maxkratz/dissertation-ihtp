@@ -233,7 +233,7 @@ public class JsonToModelLoader {
 
 		// Set `prev` and `next` edges for all produced workloads
 		linkWorkloads(p);
-		this.model.getPatients().add(p);
+		this.model.getAllPatients().add(p);
 	}
 
 	/**
@@ -383,7 +383,7 @@ public class JsonToModelLoader {
 		// Set `prev` and `next` edges for all produced workloads
 		linkWorkloads(p);
 
-		this.model.getPatients().add(p);
+		this.model.getAllPatients().add(p);
 	}
 	
 	/**
@@ -393,7 +393,7 @@ public class JsonToModelLoader {
 		for(String gender : foundGenders) {
 			final Gender g = IhtcvirtualmetamodelFactory.eINSTANCE.createGender();
 			g.setName(gender);
-			this.model.getGenders().add(g);
+			this.model.getAllGenders().add(g);
 		}
 	}
 	
@@ -412,7 +412,7 @@ public class JsonToModelLoader {
 			this.foundAges.put(name, ageCounter);
 			final AgeGroup agegroup = IhtcvirtualmetamodelFactory.eINSTANCE.createAgeGroup();
 			agegroup.setGroup(ageCounter);
-			this.model.getAgeGroups().add(agegroup);
+			this.model.getAllAgeGroups().add(agegroup);
 			ageCounter++;
 		}
 	}
@@ -478,7 +478,7 @@ public class JsonToModelLoader {
 			c.setMaxCapacity(a.getAsInt());
 			ot.getCapacities().add(c);
 		}
-		this.model.getOts().add(ot);
+		this.model.getAllOTs().add(ot);
 	}
 
 	/**
@@ -521,7 +521,7 @@ public class JsonToModelLoader {
 			s.getOpTimes().add(opt);
 		}
 		this.name2Surgeon.put(name, s);
-		this.model.getSurgeons().add(s);
+		this.model.getAllSurgeons().add(s);
 	}
 
 	/**
@@ -545,7 +545,7 @@ public class JsonToModelLoader {
 			final Day day = IhtcvirtualmetamodelFactory.eINSTANCE.createDay();
 			day.setName("d"+i);
 			day.setNumber(i);
-			this.model.getDays().add(day);
+			this.model.getAllDays().add(day);
 		}
 
 		this.numberOfFoundDays = numberOfDays;
@@ -608,7 +608,7 @@ public class JsonToModelLoader {
 		});
 
 		this.name2Room.put(name, r);
-		this.model.getRooms().add(r);
+		this.model.getAllRooms().add(r);
 	}
 
 	/**
@@ -643,7 +643,7 @@ public class JsonToModelLoader {
 		nurse.setSkillLevel(skillLevel);
 		final List<Roster> rosters = convertRosters(workingShifts);
 		nurse.getRosters().addAll(rosters);
-		this.model.getNurses().add(nurse);
+		this.model.getAllNurses().add(nurse);
 	}
 
 	/**

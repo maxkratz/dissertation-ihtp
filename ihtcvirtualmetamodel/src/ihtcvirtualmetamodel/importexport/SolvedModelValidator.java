@@ -91,7 +91,7 @@ public class SolvedModelValidator {
 		}
 		
 		// TODO: For Patients consecutive care 
-		for (final Patient p : this.model.getPatients()) {
+		for (final Patient p : this.model.getAllPatients()) {
 			if (p.isIsOccupant()) {
 				validateOccupant(p);
 			}else {
@@ -99,19 +99,19 @@ public class SolvedModelValidator {
 			}
 		}
 		
-		for(final Room r : this.model.getRooms()) {
+		for(final Room r : this.model.getAllRooms()) {
 			validateRoom(r);
 		}
 		
-		for (final Surgeon s : this.model.getSurgeons()) {
+		for (final Surgeon s : this.model.getAllSurgeons()) {
 			validateSurgeon(s);
 		}
 		
-		for (final OT ot : this.model.getOts()) {
+		for (final OT ot : this.model.getAllOTs()) {
 			validateOt(ot);
 		}
 
-		for (final Nurse n : this.model.getNurses()) {
+		for (final Nurse n : this.model.getAllNurses()) {
 			validateNurse(n);
 		}
 		
@@ -157,7 +157,7 @@ public class SolvedModelValidator {
 		VirtualWorkloadToCapacity selectedvwc = null;
 		for (final VirtualWorkloadToCapacity v : possibleOtAssignments) {
 			if (v.isIsSelected()) {
-				scheduledOt = v.getCapacity().getOt();
+				scheduledOt = v.getCapacity().getRelatedOT();
 				selectedvwc = v;
 				break;
 			}
@@ -426,8 +426,8 @@ public class SolvedModelValidator {
 			final Collection<VirtualOpTimeToCapacity> possibleCapacitys = op.getVirtualCapacity();
 			for(VirtualOpTimeToCapacity v : possibleCapacitys) {
 				if(v.isIsSelected()) {
-					if(!ots.contains(v.getCapacity().getOt())) {
-						ots.add(v.getCapacity().getOt());
+					if(!ots.contains(v.getCapacity().getRelatedOT())) {
+						ots.add(v.getCapacity().getRelatedOT());
 					}
 				}
 			}

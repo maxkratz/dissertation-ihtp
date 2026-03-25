@@ -277,7 +277,7 @@ pattern findVirtualOpTimeToCapacity {
 }
 condition noOpTimeToCapacity = forbid findVirtualOpTimeToCapacity
 
-rule assignSurgeonToOt {
+rule assignSurgeonToOT {
 	op : OpTime
 	
 	c : Capacity {
