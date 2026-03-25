@@ -67,6 +67,11 @@ public class IhtcVirtualGipsHeadlessRunner {
 		// Set parameters
 		if (config.inputJsonPath != null) {
 			runner.inputPath = config.inputJsonPath;
+
+			// Update runner paths
+			final String[] segments = runner.inputPath.split("/");
+			runner.scenarioFileName = segments[segments.length - 1];
+			runner.derivePathsFromScenario();
 		}
 		if (config.outputJsonPath != null) {
 			runner.outputPath = config.outputJsonPath;
