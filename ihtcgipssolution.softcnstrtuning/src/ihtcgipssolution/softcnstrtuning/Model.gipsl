@@ -174,10 +174,11 @@ pattern patientRoomDay {
 pattern occupantRoomDay {
 	r : Room
 
-	o : Occupant
+	o : Occupant {
+		- assignment -> r
+	}
 
 	d : Day
-	# r.name == o.roomId
 	# o.lengthOfStay >= d.id
 }
 
@@ -249,13 +250,13 @@ constraint with roomDayGender {
 		mappings.roomDayPatientLoad->filter( //
 			element.nodes.d == context.nodes.d //
 			& element.nodes.r == context.nodes.r //
-			& element.nodes.p.gender == context.nodes.g.name //
+			& element.nodes.p.gender == context.nodes.g //
 		)->sum(element.value)
 		+
 		patterns.occupantRoomDay->filter( //
 			element.nodes.d == context.nodes.d //
 			& element.nodes.r == context.nodes.r //
-			& element.nodes.o.gender == context.nodes.g.name //
+			& element.nodes.o.gender == context.nodes.g //
 		)->sum(1)
 		>= 1
 	]
