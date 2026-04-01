@@ -152,7 +152,7 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="unscheduledOptional" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="VirtualShiftToWorkload">
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="wasImported" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="preselected" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="shift" eType="#//Shift"
         eOpposite="#//Shift/virtualWorkload"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="workload" eType="#//Workload"

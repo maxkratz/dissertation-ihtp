@@ -47,7 +47,7 @@ rule selectShiftToWorkloadOccupant_select {
 	vsw : VirtualShiftToWorkload {
 		.isSelected := true
 	}
-	# vsw.wasImported == true
+	# vsw.preselected == true
 }
 
 // SCP.1-3: Rule that selects an operation day for a patient.

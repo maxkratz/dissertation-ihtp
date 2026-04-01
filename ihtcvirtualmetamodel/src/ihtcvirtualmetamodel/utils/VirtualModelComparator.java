@@ -345,7 +345,7 @@ public class VirtualModelComparator {
 		}
 
 //		if (a.getShift().equals(b.getShift()) && a.getWorkload().equals(b.getWorkload())) {
-		if (a.isWasImported() == b.isWasImported() && isEqual(a.getShift(), b.getShift())
+		if (a.isPreselected() == b.isPreselected() && isEqual(a.getShift(), b.getShift())
 				&& isEqual(a.getWorkload(), b.getWorkload()) && a.isIsSelected() == b.isIsSelected()
 				&& isEqual(a.getRequires_virtualShiftToWorkload(), b.getRequires_virtualShiftToWorkload())
 		// Break recursion loop; all instances will be checked individually anyway
