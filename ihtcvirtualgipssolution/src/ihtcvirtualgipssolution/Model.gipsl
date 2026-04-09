@@ -593,11 +593,7 @@ constraint with ageGroupsInRoom {
 	context.variables.minAgeGroup == 1
 	<=>
 	[
-		mappings.ageGroupsInRoom->filter(
-			element.nodes.r == context.nodes.r &
-			element.nodes.d == context.nodes.d &
-			element.nodes.ag == context.nodes.ag
-		)->sum(element.value) == 1
+		context.value == 1
 		&
 		mappings.ageGroupsInRoom->filter(
 			element.nodes.r == context.nodes.r &
@@ -613,11 +609,7 @@ constraint with ageGroupsInRoom {
 	context.variables.maxAgeGroup == 1
 	<=>
 	[
-		mappings.ageGroupsInRoom->filter(
-			element.nodes.r == context.nodes.r &
-			element.nodes.d == context.nodes.d &
-			element.nodes.ag == context.nodes.ag
-		)->sum(element.value) == 1
+		context.value == 1
 		&
 		mappings.ageGroupsInRoom->filter(
 			element.nodes.r == context.nodes.r &
