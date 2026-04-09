@@ -182,7 +182,7 @@ pattern opTimeOTTuple {
 
 // Pattern used for a Mapping to calculate what age groups are present in a
 // specific room for all shifts.
-// Additionally the highest and lowest age groups are also saved in variables.
+// Additionally the highest and lowest age groups are saved in variables.
 pattern ageGroupRoomDayTuple {
 	r : Room
 	d : Day
@@ -208,7 +208,7 @@ pattern nurseToWorkload {
 	vsw : VirtualShiftToWorkload
 }
 
-// Used to filter for the amount of different nurses assigned to each patient.
+// Used to filter for the amount of unique nurses assigned to each patient.
 pattern nursePatientTuple {
 	p : Patient
 	n : Nurse
@@ -721,7 +721,7 @@ function calculateOTsPerSurgeon with surgeonPenalizedOTs {
 	context.variables.penalizedOTs
 }
 
-// U5: Sets the mapping to true if the surgeon operates in the OT on that day.
+// U5: Sets the mapping to true if the surgeon operates in the OT on the day.
 constraint with surgeonInOT {
 	mappings.selectedOperationDay->filter(
 		element.nodes.vwop.opTime == context.nodes.op &
