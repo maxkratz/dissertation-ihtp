@@ -702,7 +702,7 @@ constraint with noSmallerAgeGroupInRoom {
 constraint with ageGroupsInRoom {
 	context.value
 	+
-	mappings.noSmallerAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	mappings.noSmallerAgeGroupInRoom->joinAll()->sum(element.value)
   	<=
  	1 + context.variables.minAgeGroup
 
@@ -710,7 +710,7 @@ constraint with ageGroupsInRoom {
 
  	context.value
 	+
-	mappings.noSmallerAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	mappings.noSmallerAgeGroupInRoom->joinAll()->sum(element.value)
 	>=
 	2 * context.variables.minAgeGroup
 }
@@ -736,7 +736,7 @@ constraint with noGreaterAgeGroupInRoom {
 constraint with ageGroupsInRoom {
 	context.value
 	+
-	mappings.noGreaterAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	mappings.noGreaterAgeGroupInRoom->joinAll()->sum(element.value)
   	<=
  	1 + context.variables.maxAgeGroup
 
@@ -744,7 +744,7 @@ constraint with ageGroupsInRoom {
 
  	context.value
 	+
-	mappings.noGreaterAgeGroupInRoom->join((r, r), (d, d), (ag, ag))->sum(element.value)
+	mappings.noGreaterAgeGroupInRoom->joinAll()->sum(element.value)
   	>=
  	2 * context.variables.maxAgeGroup
 }
