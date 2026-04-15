@@ -19,7 +19,7 @@ pattern findNonOccupant {
 	# p.isOccupant == false
 }
 
-pattern findExtendingShiftToFirstWorkload {
+pattern findExtendingShiftToWorkload {
 	prevvsw : VirtualShiftToWorkload {
 		- enables_virtualShiftToWorkload -> nextvsw
 	}
@@ -492,7 +492,7 @@ constraint with selectedOperationDay{
 // V3: The stay of a patient can be extended by selecting a following Node "VirtualWorkloadToShift"
 // that is connected to the previous links between the patients workloads to shifts.
 // The following node can only be selected if the previous is already set to true.
-constraint with findExtendingShiftToFirstWorkload {
+constraint with findExtendingShiftToWorkload {
 	context.nodes.prevvsw.variables.isSelected == context.nodes.nextvsw.variables.isSelected
 }
 
