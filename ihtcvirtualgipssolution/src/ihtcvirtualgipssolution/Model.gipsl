@@ -511,7 +511,7 @@ constraint with selectedExtendingShiftToWorkload {
 // 1. The patient is assigned to a room (first workload)
 //	-> `selectedShiftToFirstWorkload`.
 // 2. The patients stay is extended. The room does not change
-//	-> `selectedExtendingShiftToFirstWorkload`.
+//	-> `selectedExtendingShiftToWorkload`.
 // 3. The patient is an occupant -> All his virtual Nodes are selected
 //	-> `selectedOccupantNodes`.
 // The amount of matches can be reduced by only checking for the morning
