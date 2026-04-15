@@ -530,7 +530,7 @@ constraint with selectedExtendingShiftToWorkload {
 // U1: Sets the mapping variable to 1 if a patient is assigned to a specific room for a specific day.
 // This occurs if one of the following criteria is met: They are mutually exclusive
 // 1. The patient is assigned to a room (First workload) -> selectedShiftToFirstWorkload.
-// 2. The patients stay is extended. The room does not change -> selectedExtendingShiftToFirstWorkload.
+// 2. The patients stay is extended. The room does not change -> selectedExtendingShiftToWorkload.
 // 3. The patient is an occupant -> All his virtual Nodes are selected -> selectedOccupantNodes.
 // The amount of matches can be reduced by only checking for the morning shifts.
 // Used as primary mapping for the information on patients in rooms for every shift.
