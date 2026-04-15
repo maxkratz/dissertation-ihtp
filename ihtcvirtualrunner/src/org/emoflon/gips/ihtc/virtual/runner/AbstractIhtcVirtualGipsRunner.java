@@ -60,7 +60,7 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 	/**
 	 * Default input path.
 	 */
-	public String inputPath = datasetFolder + scenarioFileName;
+	public String inputPath;
 
 	/**
 	 * Default instance folder path.
@@ -70,24 +70,22 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 	/**
 	 * Default instance XMI path.
 	 */
-	public String instancePath = instanceFolder + scenarioFileName.replace(".json", ".xmi");
+	public String instancePath;
 
 	/**
 	 * Default pre-processing output XMI path.
 	 */
-	public String preprocessingPath = instancePath.substring(0, instancePath.lastIndexOf(".xmi")) + "_pre-proc.xmi";
+	public String preprocessingPath;
 
 	/**
 	 * Default instance solved XMI path.
 	 */
-	public String gipsOutputPath = instanceFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
-			+ "_solved.xmi";
+	public String gipsOutputPath;
 
 	/**
 	 * Default post-processing output XMI path.
 	 */
-	public String postProcOutputPath = gipsOutputPath.substring(0, gipsOutputPath.lastIndexOf(".xmi"))
-			+ "_post-proc.xmi";
+	public String postProcOutputPath;
 
 	/**
 	 * Default JSON output folder path.
@@ -97,8 +95,7 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 	/**
 	 * Default JSON output file path.
 	 */
-	public String outputPath = datasetSolutionFolder + "sol_"
-			+ scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json")) + "_gips.json";
+	public String outputPath;
 
 	/**
 	 * Default Output FDolder for Debug-files
@@ -108,9 +105,12 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 	/**
 	 * Default Output Path for Debug-file of current model instance
 	 */
-	public String debugOutputPath = debugFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
-			+ "_debug.txt";
+	public String debugOutputPath;
 
+	/**
+	 * Creates a new instance of this class, sets up the logging, and derives all
+	 * paths that depend on the scenario file name.
+	 */
 	public AbstractIhtcVirtualGipsRunner() {
 		// Configure logging
 		logger.setUseParentHandlers(false);
@@ -123,6 +123,24 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 			}
 		});
 		logger.addHandler(handler);
+		derivePathsFromScenario();
+	}
+
+	/**
+	 * Updates/derives the paths of this object that depend on the scenario file
+	 * `scenarioFileName`.
+	 */
+	public void derivePathsFromScenario() {
+		inputPath = datasetFolder + scenarioFileName;
+		instancePath = instanceFolder + scenarioFileName.replace(".json", ".xmi");
+		gipsOutputPath = instanceFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
+				+ "_solved.xmi";
+		outputPath = datasetSolutionFolder + "sol_"
+				+ scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json")) + "_gips.json";
+		debugOutputPath = debugFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
+				+ "_debug.txt";
+		preprocessingPath = instancePath.substring(0, instancePath.lastIndexOf(".xmi")) + "_pre-proc.xmi";
+		postProcOutputPath = gipsOutputPath.substring(0, gipsOutputPath.lastIndexOf(".xmi")) + "_post-proc.xmi";
 	}
 
 	/**
@@ -151,7 +169,7 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 	protected void writeXmiToFile(final String path, final ResourceSet rs) {
 		Objects.requireNonNull(path);
 		Objects.requireNonNull(rs);
-		
+
 		logger.info("Saving resource set <" + rs + "> to path: " + path);
 
 		// Workaround: Always use absolute path

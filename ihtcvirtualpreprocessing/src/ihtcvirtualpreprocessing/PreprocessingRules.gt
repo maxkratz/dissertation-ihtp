@@ -100,7 +100,7 @@ rule assignPatientToRoom {
 		++ - workload -> w
 		++ - shift -> s
 		.isSelected := false
-		.wasImported := false
+		.preselected := false
 		++ - requires_virtualWorkloadToCapacity -> vexist
 	}
 	
@@ -181,7 +181,7 @@ rule extendPatientStay {
 		++ - workload -> nextw
 		++ - shift -> nexts
 		.isSelected := false
-		.wasImported := false
+		.preselected := false
 		++ - requires_virtualShiftToWorkload -> prevvsw
 	}
 
@@ -216,7 +216,7 @@ rule preprocessOccupantsFirstWorkload {
 		++ - workload -> w
 		++ - shift -> s
 		.isSelected := false
-		.wasImported := true
+		.preselected := true
 	}
 	
 	# p.isOccupant == true
@@ -255,7 +255,7 @@ rule preprocessOccupantsWorkload {
 		++ - workload -> w
 		++ - shift -> s
 		.isSelected := false
-		.wasImported := true
+		.preselected := true
 		++ - requires_virtualShiftToWorkload -> prevvstw
 	}
 	
@@ -277,7 +277,7 @@ pattern findVirtualOpTimeToCapacity {
 }
 condition noOpTimeToCapacity = forbid findVirtualOpTimeToCapacity
 
-rule assignSurgeonToOt {
+rule assignSurgeonToOT {
 	op : OpTime
 	
 	c : Capacity {

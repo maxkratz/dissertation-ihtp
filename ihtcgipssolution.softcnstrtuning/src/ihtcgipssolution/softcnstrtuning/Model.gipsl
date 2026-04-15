@@ -5,9 +5,9 @@ import "platform:/resource/ihtcmetamodel/model/Ihtcmetamodel.ecore"
 // This specification extends the "hard-only" implementation (H1-H6)
 // and also takes the three most expensive optional constraints
 // into account:
-// - optional patients (H8)
-// - optional delay (H7)
-// - optional open OTs (H6)
+// - optional patients (S8)
+// - optional delay (S7)
+// - optional open OTs (S6)
 //
 
 //
@@ -20,8 +20,6 @@ config {
 	randomSeed := true [value := 0];
 	presolve := auto;
 	debugOutput := true;
-	// lpOutput := true [path := "gurobi.lp"];
-//	threadCount := true [value := 4];
 }
 
 //
@@ -29,43 +27,32 @@ config {
 //
 
 rule assignNurseToRoomShift {
-	h: Hospital {
-		-nurses -> n
-		-shifts -> s
-		-rooms -> r
-	}
-
-	n: Nurse {
+	n : Nurse {
 		-shiftMaxLoads -> sml
 	}
 
-	s: Shift
+	s : Shift
 
-	r: Room
+	r : Room
 
-	++ rsna: RoomShiftNurseAssignment {
+	++ rsna : RoomShiftNurseAssignment {
 		++ -nurse -> n
 		++ -shift -> s
 		++ -room -> r
 	}
 
-	sml: NurseShiftMaxLoad {
+	sml : NurseShiftMaxLoad {
 		-shift -> s
 	}
 	# sml.maxLoad > 0
 }
 
 rule assignAdmissionDayToPatient {
-	h: Hospital {
-		-patients -> p
-		-days -> d
-	}
-
-	p: Patient {
+	p : Patient {
 		++ -admissionDay -> d
 	}
 
-	d: Day
+	d : Day
 	# p.surgeryReleaseDay <= d.id
 	# p.surgeryDueDate >= d.id
 }
@@ -73,211 +60,132 @@ rule assignAdmissionDayToPatient {
 // H2: Compatible rooms: Patients can only be assigned to one of
 // their compatible rooms
 pattern roomPatientIncompatible {
-	h: Hospital {
-		-patients -> p
-		-rooms -> r
-	}
-
-	p: Patient {
+	p : Patient {
 		-incompatibleRooms -> r
 	}
 
-	r: Room
+	r : Room
 }
 
 condition roomNotIncompatible = forbid roomPatientIncompatible
 
 rule assignRoomToPatient {
-	h: Hospital {
-		-patients -> p
-		-rooms -> r
-	}
-
-	p: Patient {
+	p : Patient {
 		++ -assignedRoom -> r
 	}
 
-	r: Room
+	r : Room
 }
 when roomNotIncompatible
 
 rule assignSurgeryToPatient {
-	h: Hospital {
-		-patients -> p
-		-surgeons -> s
-		-days -> d
-		-operatingTheaters -> ot
-	}
-
-	p: Patient {
+	p : Patient {
 		++ -surgeryAssignment -> sa
 		-surgeon -> s
 	}
 
-	s: Surgeon {
+	s : Surgeon {
 		-availabilities -> as
 	}
 
-	d: Day
+	d : Day
 
-	ot: OperatingTheater {
-		-availabilities -> aot
+	relatedOT : OperatingTheater {
+		-availabilities -> aOT
 	}
 
-	++ sa: SurgeryAssignment {
+	++ sa : SurgeryAssignment {
 		++ -patient -> p
 		++ -surgeon -> s
-		++ -operationTheater -> ot
+		++ -operationTheater -> relatedOT
 		++ -day -> d
 	}
 
-	aot: OperatingTheaterAvailability {
+	aOT : OperatingTheaterAvailability {
 		-day -> d
 	}
 
-	# aot.availability > 0
+	# aOT.availability > 0
 	
-	as: SurgeonAvailability {
+	as : SurgeonAvailability {
 		-day -> d
 	}
 	# as.availability > 0
 }
 
 pattern dayRoomTuple {
-	h: Hospital {
-		-days -> d
-		-rooms -> r
-	}
-
-	d: Day
-
-	r: Room
+	d : Day
+	r : Room
 }
 
 pattern daySurgeonTuple {
-	h: Hospital {
-		-days -> d
-		-surgeons -> s
-	}
-
-	d: Day
-
-	s: Surgeon
+	d : Day
+	s : Surgeon
 }
 
 pattern dayOperatingTheaterAvailabilityTriple {
-	h: Hospital {
-		-days -> d
-		-operatingTheaters -> ot
+	d:  Day
+
+	relatedOT : OperatingTheater {
+		-availabilities -> aOT
 	}
 
-	d: Day
-
-	ot: OperatingTheater {
-		-availabilities -> aot
-	}
-
-	aot: OperatingTheaterAvailability
-	# aot.availability > 0
+	aOT : OperatingTheaterAvailability
+	# aOT.availability > 0
 }
 
 pattern dayOperatingTheaterTuple {
-	h: Hospital {
-		-days -> d
-		-operatingTheaters -> ot
-	}
-
-	d: Day
-
-	ot: OperatingTheater
+	d : Day
+	relatedOT : OperatingTheater
 }
 
 pattern findMandatoryPatient {
-	h: Hospital {
-		-patients -> p
-	}
-
-	p: Patient
+	p : Patient
 	# p.mandatory == true
 }
 
 pattern findOptionalPatient {
-	h: Hospital {
-		-patients -> p
-	}
-
-	p: Patient
+	p : Patient
 	# p.mandatory == false
 }
 
 pattern dayPatientTuple {
-	h: Hospital {
-		-patients -> p
-		-days -> d
-	}
+	p : Patient
 
-	p: Patient
-
-	d: Day
+	d : Day
 	# p.surgeryReleaseDay <= d.id
 	# p.surgeryDueDate + p.lengthOfStay - 1 >= d.id
 }
 
 pattern roomShiftTuple {
-	h: Hospital {
-		-rooms -> r
-		-shifts -> s
-	}
-
-	r: Room
-
-	s: Shift
+	r : Room
+	s : Shift
 }
 
 pattern patientRoomDay {
-	h: Hospital {
-		-rooms -> r
-		-patients -> p
-		-days -> d
-	}
+	r : Room
 
-	r: Room
+	p : Patient
 
-	p: Patient
-
-	d: Day
+	d : Day
 	# p.surgeryReleaseDay <= d.id
 	# p.surgeryDueDate + p.lengthOfStay - 1 >= d.id
 }
 
 pattern occupantRoomDay {
-	h: Hospital {
-		-rooms -> r
-		-occupants -> o
-		-days -> d
-	}
+	r : Room
 
-	r: Room
+	o : Occupant
 
-	o: Occupant
-
-	d: Day
+	d : Day
 	# r.name == o.roomId
 	# o.lengthOfStay >= d.id
 }
 
 pattern dayRoomGender {
-	h: Hospital {
-		-days -> d
-		-rooms -> r
-		-genders -> g
-	}
-
-	d: Day
-
-	r: Room
-
-	g: Gender
+	d : Day
+	r : Room
+	g : Gender
 }
 
 //
@@ -311,21 +219,21 @@ mapping roomDayLoad to dayRoomTuple {
 // Mapping that is true if gender `g` is contained in room `r` on day `d`
 mapping roomDayGender to dayRoomGender;
 
-// Mapping that is true if operating theater `ot` has at least one operation on day `d`
-mapping otDayOpened to dayOperatingTheaterTuple;
+// Mapping that is true if operating theater `relatedOT` has at least one operation on day `d`
+mapping openedOTDay to dayOperatingTheaterTuple;
 
 //
 // Constraints
 //
 
-// This constraints sets the respective `otDayOpenend` mapping to 1
-// if and only if at least one operation takes place in `ot` on day `d`.
-constraint with otDayOpened {
-	mappings.asp->join((d, d), (ot, ot))->sum(element.value)
+// This constraints sets the respective `openedOTDAy` mapping to 1
+// if and only if at least one operation takes place in `relatedOT` on day `d`.
+constraint with openedOTDay {
+	mappings.asp->join((d, d), (relatedOT, relatedOT))->sum(element.value)
 	<=
 	1000 * context.value
 	&
-	mappings.asp->join((d, d), (ot, ot))->sum(element.value)
+	mappings.asp->join((d, d), (relatedOT, relatedOT))->sum(element.value)
 	>=
 	context.value
 }
@@ -426,13 +334,13 @@ constraint with daySurgeonTuple {
 // must not exceed its maximum capacity.
 constraint with dayOperatingTheaterAvailabilityTriple {
 	// find variable assigned surgeries for a specific day and operating theater
-	mappings.asp->join((d, d), (ot, ot))->sum(element.nodes.p.surgeryDuration * element.value)
+	mappings.asp->join((d, d), (relatedOT, relatedOT))->sum(element.nodes.p.surgeryDuration * element.value)
 
 	// must be smaller of equal to the operating theater's maximum capacity
 	<=
 
 	// get the operating theater's capacity for the same specific day
-	context.nodes.ot.availabilities->filter(element.day == context.nodes.d)->sum(element.availability)
+	context.nodes.relatedOT.availabilities->filter(element.day == context.nodes.d)->sum(element.availability)
 }
 
 // H5: Mandatory versus optional patients: All mandatory patients must be admitted within the
@@ -564,7 +472,7 @@ function admissionDelay with aadp {
 // S5 Open OTs: The number of OTs opened on each day should be minimized.
 // Note that if an OT has no patients assigned for a particular day, it should
 // not open on that day.
-function openOts with otDayOpened {
+function openOTs with openedOTDay {
 	context.value
 }
 
@@ -573,5 +481,5 @@ objective : min {
 	0
 	+ functions.electiveUnscheduledPatients * types.Weight->sum(element.unscheduledOptional)
 	+ functions.admissionDelay * types.Weight->sum(element.patientDelay)
-	+ functions.openOts * types.Weight->sum(element.openOperatingTheater)
+	+ functions.openOTs * types.Weight->sum(element.openOperatingTheater)
 }

@@ -345,7 +345,7 @@ public class VirtualModelComparator {
 		}
 
 //		if (a.getShift().equals(b.getShift()) && a.getWorkload().equals(b.getWorkload())) {
-		if (a.isWasImported() == b.isWasImported() && isEqual(a.getShift(), b.getShift())
+		if (a.isPreselected() == b.isPreselected() && isEqual(a.getShift(), b.getShift())
 				&& isEqual(a.getWorkload(), b.getWorkload()) && a.isIsSelected() == b.isIsSelected()
 				&& isEqual(a.getRequires_virtualShiftToWorkload(), b.getRequires_virtualShiftToWorkload())
 		// Break recursion loop; all instances will be checked individually anyway
@@ -473,7 +473,7 @@ public class VirtualModelComparator {
 		boolean equals = true;
 		equals = equals && (a.getDay() == b.getDay());
 		equals = equals && (a.getMaxCapacity() == b.getMaxCapacity());
-		equals = equals && (isEqual(a.getOt(), b.getOt()));
+		equals = equals && (isEqual(a.getRelatedOT(), b.getRelatedOT()));
 
 		// TODO: Collections are missing
 
@@ -706,28 +706,28 @@ public class VirtualModelComparator {
 		Objects.requireNonNull(data);
 
 		// Rosters
-		model.getNurses().forEach(nurse -> {
+		model.getAllNurses().forEach(nurse -> {
 			nurse.getRosters().forEach(roster -> {
 				data.get(VirtualShiftToRoster.class.getSimpleName()).addAll(roster.getVirtualShift());
 			});
 		});
 
 		// Shift
-		model.getRooms().forEach(room -> {
+		model.getAllRooms().forEach(room -> {
 			room.getShifts().forEach(shift -> {
 				data.get(VirtualShiftToWorkload.class.getSimpleName()).addAll(shift.getVirtualWorkload());
 			});
 		});
 
 		// OpTime
-		model.getSurgeons().forEach(surgeon -> {
+		model.getAllSurgeons().forEach(surgeon -> {
 			surgeon.getOpTimes().forEach(optime -> {
 				data.get(VirtualWorkloadToOpTime.class.getSimpleName()).addAll(optime.getVirtualWorkload());
 			});
 		});
 
 		// Capacity (2x)
-		model.getOts().forEach(ot -> {
+		model.getAllOTs().forEach(ot -> {
 			ot.getCapacities().forEach(capacity -> {
 				data.get(VirtualOpTimeToCapacity.class.getSimpleName()).addAll(capacity.getVirtualOpTime());
 				data.get(VirtualWorkloadToCapacity.class.getSimpleName()).addAll(capacity.getVirtualWorkload());
