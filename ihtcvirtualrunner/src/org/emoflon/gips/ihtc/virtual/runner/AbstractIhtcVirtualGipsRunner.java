@@ -255,7 +255,7 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 		gipsApi.getSelectedOperationDay().applyNonZeroMappings(false);
 		gipsApi.getSelectedShiftToRoster().applyNonZeroMappings(false);
 		gipsApi.getSelectedShiftToFirstWorkload().applyNonZeroMappings(false);
-		gipsApi.getSelectedExtendingShiftToFirstWorkload().applyNonZeroMappings(false);
+		gipsApi.getSelectedExtendingShiftToWorkload().applyNonZeroMappings(false);
 		gipsApi.getSelectedOccupantNodes().applyNonZeroMappings(false);
 		// Alternative:
 //		gipsApi.applyAllNonZeroMappings();
@@ -290,7 +290,7 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 		gipsApi.getSelectedShiftToFirstWorkload().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getVsw().setIsSelected(true);
 		});
-		gipsApi.getSelectedExtendingShiftToFirstWorkload().getNonZeroVariableMappings().forEach(m -> {
+		gipsApi.getSelectedExtendingShiftToWorkload().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getNextvsw().setIsSelected(true);
 		});
 		gipsApi.getSelectedOccupantNodes().getNonZeroVariableMappings().forEach(m -> {

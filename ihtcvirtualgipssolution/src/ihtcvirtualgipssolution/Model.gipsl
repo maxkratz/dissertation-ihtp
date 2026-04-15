@@ -34,7 +34,7 @@ rule selectShiftToFirstWorkload {
 }
 
 // PRA.2: Rule that selects an extending VirtualShiftToWorkload-Node to be adopted in the final model.
-rule selectExtendingShiftToFirstWorkload {
+rule selectExtendingShiftToWorkload {
 	prevvsw : VirtualShiftToWorkload {
 		- enables_virtualShiftToWorkload -> nextvsw
 	}
@@ -281,7 +281,7 @@ mapping selectedShiftToFirstWorkload to selectShiftToFirstWorkload;
 
 // PRA.2: Decides which following shifts are assigned to a patient (dependent on the room that was assigned to the first workload).
 // -> Connects all following workloads to a shift (The room is always the same and equal to the one selected in selectedShiftToFirstWorkload).
-mapping selectedExtendingShiftToFirstWorkload to selectExtendingShiftToFirstWorkload;
+mapping selectedExtendingShiftToWorkload to selectExtendingShiftToWorkload;
 
 // PRA.3: Adds all imported Virtual Nodes of Occupants to the model.
 mapping selectedOccupantNodes to virtualNodesForOccupant;
@@ -513,11 +513,11 @@ constraint with selectedOperationDay {
 // V3: The stay of a patient can be extended by selecting a following Node "VirtualWorkloadToShift"
 // that is connected to the previous links between the patients workloads to shifts.
 // The following node can only be selected if the previous is already set to true.
-constraint with selectedExtendingShiftToFirstWorkload {
+constraint with selectedExtendingShiftToWorkload {
 	context.value == 1
 	<=> // <==>
 	[
-		mappings.selectedExtendingShiftToFirstWorkload->join((nextvsw, prevvsw))->sum(element.value) >= 1
+		mappings.selectedExtendingShiftToWorkload->join((nextvsw, prevvsw))->sum(element.value) >= 1
 		|
 		mappings.selectedShiftToFirstWorkload->join((vsw, prevvsw))->sum(element.value) >= 1
 	]
@@ -541,7 +541,7 @@ constraint with assignedPatientsToRoom {
 	[
 		mappings.selectedShiftToFirstWorkload->join((vsw, vsw))->sum(element.value) >= 1
 		|
-		mappings.selectedExtendingShiftToFirstWorkload->join((nextvsw, vsw))->sum(element.value) >= 1
+		mappings.selectedExtendingShiftToWorkload->join((nextvsw, vsw))->sum(element.value) >= 1
 		|
 		mappings.selectedOccupantNodes->join((vsw, vsw))->sum(element.value) >= 1	
 	]
