@@ -483,7 +483,7 @@ constraint with firstVsw {
 
 // V2.2:  The virtual Node "VirtualWorkloadToCapacity" can only be added to the final model if
 // the the corresponding patient is also assigned to a room
-constraint with selectedOperationDay{
+constraint with selectedOperationDay {
 	context.value
 	<=
 	types.VirtualShiftToWorkload->join((workload, w))->filter(element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.variables.isSelected)
