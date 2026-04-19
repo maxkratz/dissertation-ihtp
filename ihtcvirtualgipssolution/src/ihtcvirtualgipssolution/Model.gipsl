@@ -267,13 +267,15 @@ mapping surgeonPenalizedOTs to surgeonOpTimeTuple {
 // mapping that holds the information if an age group is present in a room on a specific day.
 // maxAgeGroup: True if the patient of the current Match has the highest age group in that room.
 // minAgeGroup: True if the patient of the current Match has the smallest age group in that room.
+// noSmallerAgeGroup: True if there is no smaller age group in this constellation.
+// noGreaterAgeGroup: True if there is no greater age group in this constellation.
 mapping ageGroupsInRoom to ageGroupsRoomDay {
 	var maxAgeGroup : EBoolean
 	var minAgeGroup : EBoolean
 	// True if the patient of the current match has the greatest age group in that room.
-	var noGreaterAgeGroupInRoom : EBoolean
+	var noGreaterAgeGroup : EBoolean
 	// True if the patient of the current match has the smallest age group in that room.
-	var noSmallerAgeGroupInRoom : EBoolean
+	var noSmallerAgeGroup : EBoolean
 };
 
 // mapping that holds the information what workloads a roster is responsible for / assigned to.
@@ -572,11 +574,11 @@ constraint with ageGroupsInRoom {
 		element.nodes.ag.group < context.nodes.ag.group
 	)->sum(element.value)
 	>=
-	1 - context.variables.noSmallerAgeGroupInRoom
+	1 - context.variables.noSmallerAgeGroup
 
 	&
 
-	(1 - context.variables.noSmallerAgeGroupInRoom) * 1000
+	(1 - context.variables.noSmallerAgeGroup) * 1000
 	>=
 	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
 		element.nodes.ag.group < context.nodes.ag.group
@@ -587,7 +589,7 @@ constraint with ageGroupsInRoom {
 constraint with ageGroupsInRoom {
 	context.value
 	+
-	context.variables.noSmallerAgeGroupInRoom
+	context.variables.noSmallerAgeGroup
   	<=
  	1 + context.variables.minAgeGroup
 
@@ -595,7 +597,7 @@ constraint with ageGroupsInRoom {
 
  	context.value
 	+
-	context.variables.noSmallerAgeGroupInRoom
+	context.variables.noSmallerAgeGroup
 	>=
 	2 * context.variables.minAgeGroup
 }
@@ -606,11 +608,11 @@ constraint with ageGroupsInRoom {
 		element.nodes.ag.group > context.nodes.ag.group
 	)->sum(element.value)
 	>=
-	1 - context.variables.noGreaterAgeGroupInRoom
+	1 - context.variables.noGreaterAgeGroup
 
 	&
 
-	(1 - context.variables.noGreaterAgeGroupInRoom) * 1000
+	(1 - context.variables.noGreaterAgeGroup) * 1000
 	>=
 	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
 		element.nodes.ag.group > context.nodes.ag.group
@@ -621,7 +623,7 @@ constraint with ageGroupsInRoom {
 constraint with ageGroupsInRoom {
 	context.value
 	+
-	context.variables.noGreaterAgeGroupInRoom
+	context.variables.noGreaterAgeGroup
   	<=
  	1 + context.variables.maxAgeGroup
 
@@ -629,7 +631,7 @@ constraint with ageGroupsInRoom {
 
  	context.value
 	+
-	context.variables.noGreaterAgeGroupInRoom
+	context.variables.noGreaterAgeGroup
   	>=
  	2 * context.variables.maxAgeGroup
 }
