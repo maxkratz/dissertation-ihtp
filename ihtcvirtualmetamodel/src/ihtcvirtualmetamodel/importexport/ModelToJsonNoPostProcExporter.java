@@ -79,7 +79,7 @@ public class ModelToJsonNoPostProcExporter extends ModelToJsonExporter {
 				.getVirtualShift();
 		Shift admissionShift = null;
 		for (final VirtualShiftToWorkload v : possibleShiftAssignments) {
-			if (v.isIsSelected()) {
+			if (v.getRoot().isIsSelected()) {
 				admissionShift = v.getShift();
 				break;
 			}

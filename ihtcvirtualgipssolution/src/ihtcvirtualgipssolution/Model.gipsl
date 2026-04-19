@@ -230,7 +230,7 @@ mapping selectedOperationDay to selectOperationDay;
 //
 
 type VirtualShiftToWorkload {
-	var isSelected : EBoolean bind to isSelected
+	var isSelected2 : EBoolean bind to isSelected
 	var penalizedSkillDiff : EInt
 };
 
@@ -303,11 +303,13 @@ constraint with roomForShift {
 constraint with assignedGenderToRoomOnShift {
 	context.value
 	<=
-	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
+//	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
+	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.root.variables.isSelected2)
 
 	&
 
-	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
+//	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
+	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.root.variables.isSelected2)
 	<=
 	context.value * 1000
 
@@ -450,7 +452,8 @@ constraint with Patient {
 
 // C7: A patient can't be assigned to more than one "first" shift
 constraint with Patient {
-	context.firstWorkload.virtualShift->sum(element.variables.isSelected) <= 1
+//	context.firstWorkload.virtualShift->sum(element.variables.isSelected) <= 1
+	context.firstWorkload.virtualShift->sum(element.root.variables.isSelected2) <= 1
 }
 
 //
@@ -459,7 +462,8 @@ constraint with Patient {
 
 // V1: All virtual nodes of occupants are selected
 constraint with findVirtualNodesForOccupant {
-	context.nodes.vsw.variables.isSelected == 1
+//	context.nodes.vsw.variables.isSelected == 1
+	context.nodes.vsw.root.variables.isSelected2 == 1
 }
 
 // V2.1: The virtual Node "VirtualWorkloadToShift" can only be added to the final model if
@@ -478,7 +482,8 @@ pattern firstVsw {
 	# p.isOccupant == false
 }
 constraint with firstVsw {
-	context.nodes.vsw.variables.isSelected
+//	context.nodes.vsw.variables.isSelected
+	context.nodes.vsw.root.variables.isSelected2
 	<=
 	mappings.selectedOperationDay->join((w, w))->sum(element.value)
 }
@@ -488,15 +493,16 @@ constraint with firstVsw {
 constraint with selectedOperationDay {
 	context.value
 	<=
-	types.VirtualShiftToWorkload->join((workload, w))->filter(element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.variables.isSelected)
+//	types.VirtualShiftToWorkload->join((workload, w))->filter(element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.variables.isSelected)
+	types.VirtualShiftToWorkload->join((workload, w))->filter(element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.root.variables.isSelected2)
 }
 
-// V3: The stay of a patient can be extended by selecting a following Node "VirtualWorkloadToShift"
-// that is connected to the previous links between the patients workloads to shifts.
-// The following node can only be selected if the previous is already set to true.
-constraint with findExtendingShiftToWorkload {
-	context.nodes.prevvsw.variables.isSelected == context.nodes.nextvsw.variables.isSelected
-}
+//// V3: The stay of a patient can be extended by selecting a following Node "VirtualWorkloadToShift"
+//// that is connected to the previous links between the patients workloads to shifts.
+//// The following node can only be selected if the previous is already set to true.
+//constraint with findExtendingShiftToWorkload {
+//	context.nodes.prevvsw.variables.isSelected == context.nodes.nextvsw.variables.isSelected
+//}
 
 //
 // Utility constraints needed in multiple places
@@ -508,14 +514,16 @@ constraint with findExtendingShiftToWorkload {
 constraint with assignedNursesToWorkload {
 	context.value
 	>=
-	context.nodes.vsw.variables.isSelected
+//	context.nodes.vsw.variables.isSelected
+	context.nodes.vsw.root.variables.isSelected2
 	+
 	context.nodes.vsr.variables.isSelected
 	- 1
 	
 	&
 	
-	context.nodes.vsw.variables.isSelected
+//	context.nodes.vsw.variables.isSelected
+	context.nodes.vsw.root.variables.isSelected2
 	>= 
 	context.value
 	
@@ -531,7 +539,8 @@ constraint with assignedNursesToWorkload {
 constraint with countPatientsForRoom {
 	context.variables.patientCount
 	==
-	types.VirtualShiftToWorkload->join((shift,s))->sum(element.variables.isSelected)
+//	types.VirtualShiftToWorkload->join((shift,s))->sum(element.variables.isSelected)
+	types.VirtualShiftToWorkload->join((shift,s))->sum(element.root.variables.isSelected2)
 }
 
 //
@@ -553,7 +562,8 @@ constraint with ageGroupsInRoom {
 		element.shift.room == context.nodes.r &
 		element.shift.shiftNo == context.nodes.d.number * 3 &
 		element.workload.patient.ageGroup == context.nodes.ag.group
-	)->sum(element.variables.isSelected)
+//	)->sum(element.variables.isSelected)
+	)->sum(element.root.variables.isSelected2)
 	<=
 	context.value * 1000
 
@@ -565,7 +575,8 @@ constraint with ageGroupsInRoom {
 		element.shift.room == context.nodes.r &
 		element.shift.shiftNo == context.nodes.d.number * 3 &
 		element.workload.patient.ageGroup == context.nodes.ag.group
-	)->sum(element.variables.isSelected)
+//	)->sum(element.variables.isSelected)
+	)->sum(element.root.variables.isSelected2)
 }
 
 // U17: Sets an auxiliary variable for expressing U9 without a boolean equivalence.
@@ -647,7 +658,8 @@ function calculateUnqualifiedNurses with VirtualShiftToWorkload {
 constraint with VirtualShiftToWorkload {
 	context.variables.penalizedSkillDiff
 	>=
-	context.variables.isSelected * context.workload.minNurseSkill
+//	context.variables.isSelected * context.workload.minNurseSkill
+	context.root.variables.isSelected2 * context.workload.minNurseSkill
 	-
 	types.VirtualShiftToRoster->filter(element.shift == context.shift)->sum(element.variables.isSelected * element.roster.nurse.skillLevel)
 	
@@ -746,14 +758,16 @@ constraint with surgeonPenalizedOTs {
 
 // S7: The number of days between a patient´s release date and their actual date of admission should be minimized
 function calculateWaitTime with findNonOccupant {
-	types.VirtualShiftToWorkload->filter(element.workload == context.nodes.p.firstWorkload)->sum(((element.shift.shiftNo / 3) - context.nodes.p.earliestDay) * element.variables.isSelected)
+//	types.VirtualShiftToWorkload->filter(element.workload == context.nodes.p.firstWorkload)->sum(((element.shift.shiftNo / 3) - context.nodes.p.earliestDay) * element.variables.isSelected)
+	types.VirtualShiftToWorkload->filter(element.workload == context.nodes.p.firstWorkload)->sum(((element.shift.shiftNo / 3) - context.nodes.p.earliestDay) * element.root.variables.isSelected2)
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
 
 // S8: The number of not admitted optional patients should be minimized
 function calculateNotAssignedOptionalPatients with optionalPatients {
-	1 - types.VirtualShiftToWorkload->filter(element.workload == context.nodes.p.firstWorkload)->sum(element.variables.isSelected)
+//	1 - types.VirtualShiftToWorkload->filter(element.workload == context.nodes.p.firstWorkload)->sum(element.variables.isSelected)
+	1 - types.VirtualShiftToWorkload->filter(element.workload == context.nodes.p.firstWorkload)->sum(element.root.variables.isSelected2)
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */

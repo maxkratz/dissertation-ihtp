@@ -141,6 +141,7 @@ public class PreprocessingNoGtApp {
 					v.setRequires_virtualShiftToWorkload(vPrev);
 					vPrev.setEnables_virtualShiftToWorkload(v);
 				}
+				v.setRoot(findRoot(v));
 				shift.getVirtualWorkload().add(v);
 				vPrev = v;
 
@@ -150,6 +151,23 @@ public class PreprocessingNoGtApp {
 			}
 
 		});
+	}
+
+	/**
+	 * Recursively finds the `root` VirtualShiftToWorkload for the given object. If
+	 * there is no requires VirtualShiftToWorkload, the method returns the given
+	 * object. Else it traverses the requires edge until there is not further
+	 * required VirtualShiftToWorkload object.
+	 * 
+	 * @param v VirtualShiftToWorkload to find the root node for.
+	 * @return Root node of the given VirtualShiftToWorkload object.
+	 */
+	private VirtualShiftToWorkload findRoot(final VirtualShiftToWorkload v) {
+		if (v.getRequires_virtualShiftToWorkload() != null) {
+			return findRoot(v.getRequires_virtualShiftToWorkload());
+		} else {
+			return v;
+		}
 	}
 
 	/**
@@ -267,76 +285,92 @@ public class PreprocessingNoGtApp {
 	private void createVirtualShiftToWorkloadInitialCandidates() {
 		Objects.requireNonNull(model);
 		model.getAllPatients().stream().filter(patient -> !patient.isIsOccupant()).forEach(patient -> {
-			model.getAllRooms().stream().filter(room -> !patient.getIncompatibleRooms().contains(room)).forEach(room -> {
-				room.getShifts().forEach(shift -> {
-					// Check shift time conditions (i.e., only use the first shift per day)
-					if (shift.getShiftNo() % 3 == 0) {
-						// If an occupant with a different gender is assigned to the same room during the potential stay time -> Don't create virtual shifts
-						final List<Patient> occupantsInRoom = model.getAllPatients().stream() // Get all patients from the model
-								.filter(occupant -> occupant.isIsOccupant() // Only take occupants into account
-								 && occupant.getFirstWorkload().getVirtualShift().get(0).getShift().getRoom().equals(room)) // The occupant's room must match the patient's room
-								.toList();
-						// Find latest day of stay of all occupants in the room
-						int lastDay = 0;
-						// Genders of all occupants in the same room are equal
-						String allOccupantGenderInRoom = patient.getGender(); // To be overwritten if the Gender of occupants in the same room and time do not match
-						// Find earliest day a occupant leaves the room
-						int earliestDay = model.getPeriod();
-						for(final Patient p : occupantsInRoom) {
-							if(lastDay < p.getStayLength() - 1) {
-								lastDay = p.getStayLength() - 1;
-								allOccupantGenderInRoom = p.getGender();
-							}
-							if(earliestDay > p.getStayLength()) {
-								earliestDay = p.getStayLength();
-							}
-						}
-						// If the room is already completely full with occupants -> don't create VSW
-						int occupantsPerRoom = occupantsInRoom.size();
-						final boolean roomFull = occupantsPerRoom == room.getBeds() && shift.getShiftNo() / 3 < earliestDay;
-						// Check if gender of the occupants does *not* match the gender of the patient
-						// ... latest occupant's stay is within the time frame
-						final boolean genderMix = !patient.getGender().equals(allOccupantGenderInRoom) && shift.getShiftNo() / 3 <= lastDay;
-						
-						// ... do/do not create virtual shift objects
-						if (!genderMix && !roomFull) {
-							// Check if the shift number / 3 matches any available OT's capacity object
-							final int day = shift.getShiftNo() / 3;
-							VirtualWorkloadToCapacity vfound = null;
-							for (final var vexists : patient.getFirstWorkload().getVirtualCapacity()) {
-								if (vexists.getCapacity().getDay() == day) {
-									vfound = vexists;
-									break;
+			model.getAllRooms().stream().filter(room -> !patient.getIncompatibleRooms().contains(room))
+					.forEach(room -> {
+						room.getShifts().forEach(shift -> {
+							// Check shift time conditions (i.e., only use the first shift per day)
+							if (shift.getShiftNo() % 3 == 0) {
+								// If an occupant with a different gender is assigned to the same room during
+								// the potential stay time -> Don't create virtual shifts
+								final List<Patient> occupantsInRoom = model.getAllPatients().stream() // Get all
+																										// patients from
+																										// the model
+										.filter(occupant -> occupant.isIsOccupant() // Only take occupants into account
+												&& occupant.getFirstWorkload().getVirtualShift().get(0).getShift()
+														.getRoom().equals(room)) // The occupant's room must match the
+																					// patient's room
+										.toList();
+								// Find latest day of stay of all occupants in the room
+								int lastDay = 0;
+								// Genders of all occupants in the same room are equal
+								String allOccupantGenderInRoom = patient.getGender(); // To be overwritten if the Gender
+																						// of occupants in the same room
+																						// and time do not match
+								// Find earliest day a occupant leaves the room
+								int earliestDay = model.getPeriod();
+								for (final Patient p : occupantsInRoom) {
+									if (lastDay < p.getStayLength() - 1) {
+										lastDay = p.getStayLength() - 1;
+										allOccupantGenderInRoom = p.getGender();
+									}
+									if (earliestDay > p.getStayLength()) {
+										earliestDay = p.getStayLength();
+									}
 								}
-							}
-							if (vfound != null) {
-								// Check if shift is in potential start time frame
-								if (day >= patient.getEarliestDay() && day <= patient.getDueDay()) {
-									if ((day - patient.getEarliestDay()) * model.getWeight().getPatientDelay() > model.getWeight().getUnscheduledOptional() ) {
-										// If the cost to delay the patient is higher than the cost to not schedule him at all -> Don't create virtual shifts
-									} else {
-										final VirtualShiftToWorkload v = IhtcvirtualmetamodelFactory.eINSTANCE
-												.createVirtualShiftToWorkload();
-										v.setIsSelected(false);
-										v.setPreselected(false);
-										v.setShift(shift);
-										v.setWorkload(patient.getFirstWorkload());
-										v.getRequires_virtualWorkloadToCapacity()
-												.addAll(patient.getFirstWorkload().getVirtualCapacity().stream().filter(
-														vwc -> vwc.getCapacity().getDay() == v.getShift().getShiftNo() / 3).toList());
-										patient.getFirstWorkload().getVirtualCapacity().stream().filter(
-												vwc -> vwc.getCapacity().getDay() == v.getShift().getShiftNo() / 3).toList()
-												.forEach(vc -> {
-													vc.getEnables_virtualShiftToWorkload().add(v);
-										});
-										shift.getVirtualWorkload().add(v);
+								// If the room is already completely full with occupants -> don't create VSW
+								int occupantsPerRoom = occupantsInRoom.size();
+								final boolean roomFull = occupantsPerRoom == room.getBeds()
+										&& shift.getShiftNo() / 3 < earliestDay;
+								// Check if gender of the occupants does *not* match the gender of the patient
+								// ... latest occupant's stay is within the time frame
+								final boolean genderMix = !patient.getGender().equals(allOccupantGenderInRoom)
+										&& shift.getShiftNo() / 3 <= lastDay;
+
+								// ... do/do not create virtual shift objects
+								if (!genderMix && !roomFull) {
+									// Check if the shift number / 3 matches any available OT's capacity object
+									final int day = shift.getShiftNo() / 3;
+									VirtualWorkloadToCapacity vfound = null;
+									for (final var vexists : patient.getFirstWorkload().getVirtualCapacity()) {
+										if (vexists.getCapacity().getDay() == day) {
+											vfound = vexists;
+											break;
+										}
+									}
+									if (vfound != null) {
+										// Check if shift is in potential start time frame
+										if (day >= patient.getEarliestDay() && day <= patient.getDueDay()) {
+											if ((day - patient.getEarliestDay()) * model.getWeight()
+													.getPatientDelay() > model.getWeight().getUnscheduledOptional()) {
+												// If the cost to delay the patient is higher than the cost to not
+												// schedule him at all -> Don't create virtual shifts
+											} else {
+												final VirtualShiftToWorkload v = IhtcvirtualmetamodelFactory.eINSTANCE
+														.createVirtualShiftToWorkload();
+												v.setIsSelected(false);
+												v.setPreselected(false);
+												v.setShift(shift);
+												v.setWorkload(patient.getFirstWorkload());
+												v.getRequires_virtualWorkloadToCapacity()
+														.addAll(patient.getFirstWorkload().getVirtualCapacity().stream()
+																.filter(vwc -> vwc.getCapacity()
+																		.getDay() == v.getShift().getShiftNo() / 3)
+																.toList());
+												patient.getFirstWorkload().getVirtualCapacity().stream()
+														.filter(vwc -> vwc.getCapacity()
+																.getDay() == v.getShift().getShiftNo() / 3)
+														.toList().forEach(vc -> {
+															vc.getEnables_virtualShiftToWorkload().add(v);
+														});
+												v.setRoot(findRoot(v));
+												shift.getVirtualWorkload().add(v);
+											}
+										}
 									}
 								}
 							}
-						}
-					}
-				});
-			});
+						});
+					});
 		});
 	}
 
@@ -394,6 +428,7 @@ public class PreprocessingNoGtApp {
 			vNew.setWorkload(w);
 			vNew.setRequires_virtualShiftToWorkload(v);
 			v.setEnables_virtualShiftToWorkload(vNew);
+			vNew.setRoot(findRoot(vNew));
 			s.getVirtualWorkload().add(vNew);
 			w = (Workload) w.getNext();
 			s = (Shift) s.getNext();

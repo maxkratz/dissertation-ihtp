@@ -523,7 +523,7 @@ public class SolvedModelValidator {
 			
 			final Collection<VirtualShiftToWorkload> possibleShiftAssignments = w.getVirtualShift();
 			for (final VirtualShiftToWorkload v : possibleShiftAssignments) {
-				if (v.isIsSelected()) {
+				if (v.getRoot().isIsSelected()) {
 					assignedShifts++;
 					if(workloadNumber == 0) {
 						virtualAdmissionShift = v;

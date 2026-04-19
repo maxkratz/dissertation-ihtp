@@ -50,7 +50,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 
 		for (final VirtualShiftToWorkload vsw : s.getVirtualWorkload()) {
 			// Find the virtual object that was selected
-			if (vsw.isIsSelected()) {
+			if (vsw.getRoot().isIsSelected()) {
 				final int age = vsw.getWorkload().getPatient().getAgeGroup();
 				if (age < minAge) {
 					minAge = age;
@@ -234,7 +234,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 			boolean admitted = false;
 			int firstShiftNumber = -1;
 			for (final var v : p.getFirstWorkload().getVirtualShift()) {
-				if (v.isIsSelected()) {
+				if (v.getRoot().isIsSelected()) {
 					admitted = true;
 					firstShiftNumber = v.getShift().getShiftNo();
 					break;
@@ -265,7 +265,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 			if (!p.isMandatory() || p.isIsOccupant()) {
 				boolean admitted = false;
 				for (final VirtualShiftToWorkload vsw : p.getFirstWorkload().getVirtualShift()) {
-					if (vsw.isIsSelected()) {
+					if (vsw.getRoot().isIsSelected()) {
 						admitted = true;
 					}
 				}
@@ -300,7 +300,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 		for (final Workload w : p.getWorkloads()) {
 			// For each workload, find the assigned room
 			for (final VirtualShiftToWorkload vsw : w.getVirtualShift()) {
-				if (vsw.isIsSelected()) {
+				if (vsw.getRoot().isIsSelected()) {
 					// If shift number matches the day
 					if ((vsw.getShift().getShiftNo() / 3) == d) {
 						// Room must also match
@@ -337,7 +337,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 		int patientLevel = 0;
 		for (final Workload w : patient.getWorkloads()) {
 			for (final VirtualShiftToWorkload vsw : w.getVirtualShift()) {
-				if (vsw.isIsSelected()) {
+				if (vsw.getRoot().isIsSelected()) {
 					if (vsw.getShift().getShiftNo() == shift) {
 						patientLevel = w.getMinNurseSkill();
 						break;
@@ -372,7 +372,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 
 		for (final Workload w : p.getWorkloads()) {
 			for (final VirtualShiftToWorkload vsw : w.getVirtualShift()) {
-				if (vsw.isIsSelected()) {
+				if (vsw.getRoot().isIsSelected()) {
 					if (vsw.getShift().getShiftNo() == shiftNo) {
 						return w.getWorkloadValue();
 					}
@@ -398,7 +398,7 @@ public class ModelCostNoPostProcCalculator extends ModelCostCalculator {
 		final Set<Nurse> foundNurses = new HashSet<Nurse>();
 		for (final Workload w : patient.getWorkloads()) {
 			for (final VirtualShiftToWorkload vsw : w.getVirtualShift()) {
-				if (vsw.isIsSelected()) {
+				if (vsw.getRoot().isIsSelected()) {
 					for (final VirtualShiftToRoster vsr : vsw.getShift().getVirtualRoster()) {
 						if (vsr.isIsSelected()) {
 							foundNurses.add(vsr.getRoster().getNurse());
