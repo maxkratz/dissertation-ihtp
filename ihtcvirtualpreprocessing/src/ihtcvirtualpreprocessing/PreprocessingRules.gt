@@ -85,7 +85,9 @@ rule assignPatientToRoom {
 		- firstWorkload -> w
 	}
 	
-	w : Workload
+	w : Workload {
+		++ - virtualShift -> vnew
+	}
 	
 	c : Capacity
 	
@@ -156,7 +158,9 @@ rule extendPatientStay {
 		- next -> nextw
 	}
 	
-	nextw : Workload
+	nextw : Workload {
+		++ - virtualShift -> vnew
+	}
 	
 	prevvsw : VirtualShiftToWorkload {
 		- workload -> prevw
@@ -200,6 +204,7 @@ rule preprocessOccupantsFirstWorkload {
 	
 	w : Workload {
 		-- - derivedShift -> s
+		++ - virtualShift -> vnew
 	}
 	
 	s : Shift {
@@ -229,6 +234,7 @@ rule preprocessOccupantsWorkload {
 	
 	w : Workload {
 		-- - derivedShift -> s
+		++ - virtualShift -> vnew
 		- prev -> prevw
 	}
 	
@@ -278,7 +284,9 @@ pattern findVirtualOpTimeToCapacity {
 condition noOpTimeToCapacity = forbid findVirtualOpTimeToCapacity
 
 rule assignSurgeonToOT {
-	op : OpTime
+	op : OpTime {
+		++ - virtualCapacity -> vnew
+	}
 	
 	c : Capacity {
 		++ - virtualOpTime -> vnew
@@ -328,7 +336,9 @@ rule fixOperationDayOpTime {
 		- surgeon -> s
 	}
 	
-	w : Workload
+	w : Workload {
+		++ - virtualOpTime -> vnew
+	}
 	
 	s : Surgeon {
 		- opTimes -> op
@@ -378,7 +388,9 @@ rule fixOperationDayCapacity {
 		++ - enables_virtual_WorkloadToCapacity -> vnew2
 	}
 	
-	w : Workload
+	w : Workload {
+		++ - virtualCapacity -> vnew2
+	}
 	
 	++ vnew2 : VirtualWorkloadToCapacity {
 		++ - workload -> w
