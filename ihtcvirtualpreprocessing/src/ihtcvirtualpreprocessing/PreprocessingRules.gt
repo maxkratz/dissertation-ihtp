@@ -75,9 +75,10 @@ rule assignPatientToRoomVirtual_preproc {
 	p : Patient {
 		- firstWorkload -> w
 	}
-
-	w : Workload
-
+	
+	w : Workload {
+		++ - virtualShift -> vnew
+	}
 	c : Capacity
 
 	vexist : VirtualWorkloadToCapacity {
@@ -148,9 +149,11 @@ rule extendPatientStayVirtual_preproc {
 	prevw : Workload {
 		- next -> nextw
 	}
-
-	nextw : Workload
-
+	
+	nextw : Workload {
+		++ - virtualShift -> vnew
+	}
+	
 	prevvsw : VirtualShiftToWorkload {
 		- workload -> prevw
 		- shift -> prevs
@@ -190,6 +193,7 @@ rule occupantsFirstWorkloadVirtual_preproc {
 
 	w : Workload {
 		-- - derivedShift -> s
+		++ - virtualShift -> vnew
 	}
 
 	s : Shift {
@@ -216,6 +220,7 @@ rule extendOccupantsStayVirtual_preproc {
 
 	w : Workload {
 		-- - derivedShift -> s
+		++ - virtualShift -> vnew
 		- prev -> prevw
 	}
 
@@ -260,7 +265,9 @@ pattern findVirtualOpTimeToCapacity {
 condition noOpTimeToCapacity = forbid findVirtualOpTimeToCapacity
 
 rule assignSurgeonToOTVirtual_preproc {
-	op : OpTime
+	op : OpTime {
+		++ - virtualCapacity -> vnew
+	}
 
 	c : Capacity {
 		++ - virtualOpTime -> vnew
@@ -310,9 +317,11 @@ rule fixOperationDayOpTimeVirtual_preproc {
 		- firstWorkload -> w
 		- surgeon -> s
 	}
-
-	w : Workload
-
+	
+	w : Workload {
+		++ - virtualOpTime -> vnew
+	}
+	
 	s : Surgeon {
 		- opTimes -> op
 	}
@@ -360,9 +369,11 @@ rule fixOperationDayCapacityVirtual_preproc {
 		- workload -> w
 		++ - enables_virtual_WorkloadToCapacity -> vnew2
 	}
-
-	w : Workload
-
+	
+	w : Workload {
+		++ - virtualCapacity -> vnew2
+	}
+	
 	++ vnew2 : VirtualWorkloadToCapacity {
 		++ - workload -> w
 		++ - capacity -> c

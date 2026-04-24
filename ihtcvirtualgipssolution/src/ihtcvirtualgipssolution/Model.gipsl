@@ -282,6 +282,8 @@ mapping surgeonPenalizedOTs to findOpTime {
 mapping ageGroupsInRoom to ageGroupRoomDayTuple {
 	var maxAgeGroup : EBoolean
 	var minAgeGroup : EBoolean
+	var noSmallerAgeGroup : EBoolean
+	var noGreaterAgeGroup : EBoolean
 };
 
 // Mapping that holds the information what workloads a roster is responsible
