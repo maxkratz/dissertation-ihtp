@@ -30,7 +30,9 @@ rule assignNurseToRoom {
 		-rosters -> roster
 	}
 
-	roster : Roster
+	roster : Roster {
+		++ - virtualShift -> vnew
+	}
 
 	room : Room {
 		-shifts -> shift
