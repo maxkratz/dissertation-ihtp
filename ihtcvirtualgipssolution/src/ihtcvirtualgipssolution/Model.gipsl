@@ -25,7 +25,9 @@ rule selectShiftToFirstWorkload {
 		- virtualCapacity -> vwc
 	}
 
-	vwc : VirtualWorkloadToCapacity
+	vwc : VirtualWorkloadToCapacity {
+		- enables_virtualShiftToWorkload -> vsw
+	}
 
 	vsw : VirtualShiftToWorkload {
 		- requires_virtualWorkloadToCapacity -> vwc
