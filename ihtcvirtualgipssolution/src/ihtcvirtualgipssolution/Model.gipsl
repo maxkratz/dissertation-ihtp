@@ -602,7 +602,7 @@ constraint with ageGroupsInRoom {
 	[
 		context.value == 1
 		&
-		mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.variables.noSmallerAgeGroup) == 1
+		context.variables.noSmallerAgeGroup == 1
 	]
 }
 
@@ -620,7 +620,7 @@ constraint with ageGroupsInRoom {
  	[
  		context.value == 1
  		&
- 		mappings.ageGroupsInRoom->join((r, r), (d, d), (ag, ag))->sum(element.variables.noGreaterAgeGroup) == 1
+ 		context.variables.noGreaterAgeGroup == 1
 	]
 }
 
