@@ -431,7 +431,7 @@ constraint with countPatientsForRoom {
 	// If there is a nurse assigned in any of the shifts there has to be at
 	// least one patient assigned to the room.
   	context.variables.patientCount >= 1
-  	<=> // <==>
+  	<==> // <==>
   	[
 	  	mappings.selectedShiftToRoster->join((s, s))->sum(element.value) == 1
 	  	&
@@ -439,9 +439,9 @@ constraint with countPatientsForRoom {
 		&
 		mappings.selectedShiftToRoster->join((r, r))->filter(element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 2)->sum(element.value) == 1
   	]
-  	
-  	&
+}
 
+constraint with countPatientsForRoom {
   	// A room can only be assigned to 1 or 0 nurses for each shift
   	mappings.selectedShiftToRoster->join((s, s))->sum(element.value) <= 1
 	&
