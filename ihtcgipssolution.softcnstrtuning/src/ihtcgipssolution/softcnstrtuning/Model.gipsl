@@ -122,7 +122,7 @@ pattern daySurgeonTuple {
 	s : Surgeon
 }
 
-pattern dayOperatingTheaterAvailabilityTriple {
+pattern dayOperatingTheaterAvailabilityTuple {
 	d:  Day
 
 	relatedOT : OperatingTheater {
@@ -161,7 +161,7 @@ pattern roomShiftTuple {
 	s : Shift
 }
 
-pattern patientRoomDay {
+pattern patientRoomDayTuple {
 	r : Room
 
 	p : Patient
@@ -171,7 +171,7 @@ pattern patientRoomDay {
 	# p.surgeryDueDate + p.lengthOfStay - 1 >= d.id
 }
 
-pattern occupantRoomDay {
+pattern occupantIsInRoomOnDay {
 	r : Room
 
 	o : Occupant
@@ -181,7 +181,7 @@ pattern occupantRoomDay {
 	# o.lengthOfStay >= d.id
 }
 
-pattern dayRoomGender {
+pattern dayRoomGenderTuple {
 	d : Day
 	r : Room
 	g : Gender
@@ -196,33 +196,33 @@ pattern dayRoomGender {
 //
 
 // Assign nurse to a room and shift.
-mapping anrs to assignNurseToRoomShift;
+mapping assignedNurseToRoomOnShift to assignNurseToRoomShift;
 
 // Assign an admission day to a patient.
-mapping aadp to assignAdmissionDayToPatient;
+mapping assignedAdmissionDayToPatient to assignAdmissionDayToPatient;
 
 // Assign a room to a patient.
-mapping arp to assignRoomToPatient;
+mapping assignedRoomToPatient to assignRoomToPatient;
 
 // Assign a surgery to a patient.
-mapping asp to assignSurgeryToPatient;
+mapping assignedSurgeryToPatient to assignSurgeryToPatient;
 
 // Mapping that holds the information if a patient `p` is scheduled for day
 // `d` in room `r`.
-mapping roomDayPatientLoad to patientRoomDay;
+mapping patientIsInRoomOnDay to patientRoomDayTuple;
 
 // Mapping that holds the cumulative number of all patients on day `d` in
 // room `r`.
-mapping roomDayLoad to dayRoomTuple {
+mapping patientsInRoomOnDay to dayRoomTuple {
 	var load : EInt
 };
 
 // Mapping that is true if gender `g` is contained in room `r` on day `d`.
-mapping roomDayGender to dayRoomGender;
+mapping genderIsInRoomOnDay to dayRoomGenderTuple;
 
 // Mapping that is true if operating theater `relatedOT` has at least one
 // operation on day `d`.
-mapping openedOTDay to dayOperatingTheaterTuple;
+mapping openedOTOnDay to dayOperatingTheaterTuple;
 
 //
 // Constraints
@@ -230,10 +230,11 @@ mapping openedOTDay to dayOperatingTheaterTuple;
 
 // This constraints sets the respective `openedOTDAy` mapping to 1 if and
 // only if at least one operation takes place in `relatedOT` on day `d`.
-constraint with openedOTDay {
+constraint with openedOTOnDay {
 	[
-		mappings.asp->filter(element.nodes.d == context.nodes.d &
-			element.nodes.relatedOT == context.nodes.relatedOT
+		mappings.assignedSurgeryToPatient->filter( //
+			element.nodes.d == context.nodes.d & //
+			element.nodes.relatedOT == context.nodes.relatedOT //
 		)->sum(element.value) >= 1
 	]
 	<=>
@@ -244,15 +245,15 @@ constraint with openedOTDay {
 
 // This constraint sets the respective `roomDayGender` mapping to 1
 // if and only if the gender `g` is present in room `r` on day `d`.
-constraint with roomDayGender {
+constraint with genderIsInRoomOnDay {
 	[
-		mappings.roomDayPatientLoad->filter( //
+		mappings.patientIsInRoomOnDay->filter( //
 			element.nodes.d == context.nodes.d //
 			& element.nodes.r == context.nodes.r //
 			& element.nodes.p.gender == context.nodes.g.name //
 		)->sum(element.value)
 		+
-		patterns.occupantRoomDay->filter( //
+		patterns.occupantIsInRoomOnDay->filter( //
 			element.nodes.d == context.nodes.d //
 			& element.nodes.r == context.nodes.r //
 			& element.nodes.o.gender == context.nodes.g.name //
@@ -267,16 +268,16 @@ constraint with roomDayGender {
 
 // If a patient `p` is scheduled for room `r` on a day `d` that is within the
 // patients scheduled time frame, set the respective mapping variable to 1.
-constraint with roomDayPatientLoad {
+constraint with patientIsInRoomOnDay {
 	[
-		mappings.aadp->filter( //
+		mappings.assignedAdmissionDayToPatient->filter( //
 			element.nodes.p == context.nodes.p //
 			& element.nodes.d.id - 1 <= context.nodes.d.id //
 			& element.nodes.d.id + context.nodes.p.lengthOfStay - 1 //
 				>= context.nodes.d.id //
 		)->sum(element.value) >= 1
 		&
-		mappings.arp->filter( //
+		mappings.assignedRoomToPatient->filter( //
 			element.nodes.p == context.nodes.p //
 			& element.nodes.r == context.nodes.r //
 		)->sum(element.value) >= 1
@@ -291,25 +292,27 @@ constraint with roomDayPatientLoad {
 // on day `d`. This value must be saved in the free mapping variable
 // `load` for each room `r` on each day `d`.
 // load_r = number_of_patients(r,d) + number_of_occupants(r,d)
-constraint with roomDayLoad {
+constraint with patientsInRoomOnDay {
 	context.variables.load
 	==
 	// patients
-	mappings.roomDayPatientLoad->filter( //
+	mappings.patientIsInRoomOnDay->filter( //
 		element.nodes.r == context.nodes.r //
 		& element.nodes.d == context.nodes.d //
 	)->sum(element.value)
 	+
 	// occupants
-	patterns.occupantRoomDay->filter(element.nodes.r == context.nodes.r & //
-		element.nodes.d == context.nodes.d)->sum(1)
+	patterns.occupantIsInRoomOnDay->filter( //
+		element.nodes.r == context.nodes.r & //
+		element.nodes.d == context.nodes.d //
+	)->sum(1)
 }
 
 // H1: No gender mix per room
 //
 // Translation: at most one gender must be present in a room `r` on day `d`
 constraint with dayRoomTuple {
-	mappings.roomDayGender->filter(
+	mappings.genderIsInRoomOnDay->filter(
 		element.nodes.r == context.nodes.r //
 		& element.nodes.d == context.nodes.d //
 	)->sum(element.value)
@@ -319,7 +322,7 @@ constraint with dayRoomTuple {
 
 // H7: Room capacity: The number of patients in each room in each day cannot
 // exceed the capacity of the room.
-constraint with roomDayLoad {
+constraint with patientsInRoomOnDay {
 	context.variables.load <= context.nodes.r.capacity
 }
 
@@ -327,7 +330,7 @@ constraint with roomDayLoad {
 // exceeded.
 constraint with daySurgeonTuple {
 	// find variable assigned surgery time for a specific day and surgeon
-	mappings.asp->filter( //
+	mappings.assignedSurgeryToPatient->filter( //
 		element.nodes.d == context.nodes.d //
 		& element.nodes.s == context.nodes.s
 	)->sum(element.nodes.p.surgeryDuration * element.value)
@@ -342,9 +345,9 @@ constraint with daySurgeonTuple {
 
 // H4: OT overtime: The duration of all surgeries allocated to an OT on a day
 // must not exceed its maximum capacity.
-constraint with dayOperatingTheaterAvailabilityTriple {
+constraint with dayOperatingTheaterAvailabilityTuple {
 	// find variable assigned surgeries for a specific day and OT
-	mappings.asp->filter( //
+	mappings.assignedSurgeryToPatient->filter( //
 		element.nodes.d == context.nodes.d //
 		& element.nodes.relatedOT == context.nodes.relatedOT //
 	)->sum(element.nodes.p.surgeryDuration * element.value)
@@ -364,12 +367,14 @@ constraint with dayOperatingTheaterAvailabilityTriple {
 // This constraint ensures that all mandatory patients will be included.
 constraint with findMandatoryPatient {
 	// All mandatory patients get an admission day.
-	mappings.aadp->filter(element.nodes.p == context.nodes.p) //
-		->sum(element.value) == 1
+	mappings.assignedAdmissionDayToPatient->filter( //
+		element.nodes.p == context.nodes.p //
+	) ->sum(element.value) == 1
 	&
 	// All mandatory patients get a room.
-	mappings.arp->filter(element.nodes.p == context.nodes.p) //
-		->sum(element.value) == 1
+	mappings.assignedRoomToPatient->filter( //
+		element.nodes.p == context.nodes.p //
+	) ->sum(element.value) == 1
 }
 
 // 2.2 Solution: "i. the admission date for patients, or, in the case of
@@ -388,21 +393,24 @@ constraint with findMandatoryPatient {
 // included.
 constraint with findOptionalPatient {
 	// Optional patients can have an admission day
-	mappings.aadp->filter(element.nodes.p == context.nodes.p) //
-		->sum(element.value) <= 1
+	mappings.assignedAdmissionDayToPatient->filter( //
+		element.nodes.p == context.nodes.p)->sum(element.value) <= 1
 	&
 	// Optional patients can have an assigned room
-	mappings.arp->filter(element.nodes.p == context.nodes.p) //
-		->sum(element.value) <= 1
+	mappings.assignedRoomToPatient->filter( //
+		element.nodes.p == context.nodes.p
+	) ->sum(element.value) <= 1
 
 	// If an optional patient has an admission day (assigned room) they must
 	// also have an assigned room (admission day)
 	&
-	mappings.aadp->filter(element.nodes.p == context.nodes.p) //
-		->sum(element.value)
+	mappings.assignedAdmissionDayToPatient->filter( //
+		element.nodes.p == context.nodes.p //
+	)->sum(element.value)
 	==
-	mappings.arp->filter(element.nodes.p == context.nodes.p) //
-		->sum(element.value)
+	mappings.assignedRoomToPatient->filter( //
+		element.nodes.p == context.nodes.p //
+	)->sum(element.value)
 }
 
 // H6: Admission day: A patient can be admitted on any day from their release
@@ -412,7 +420,7 @@ constraint with findOptionalPatient {
 // Part 1: A patient can be admitted on any day from their release date to
 // their due date.
 constraint with findMandatoryPatient {
-	mappings.aadp->filter( //
+	mappings.assignedAdmissionDayToPatient->filter( //
 		element.nodes.p == context.nodes.p //
 		// the following two constraints will be checked via the LHS of the
 		// GT rule:
@@ -428,7 +436,8 @@ constraint with findMandatoryPatient {
 //
 // This constraint ensures that each patient is located in at most one room.
 constraint with Patient {
-	mappings.arp->filter(element.nodes.p == context)->sum(element.value) <= 1
+	mappings.assignedRoomToPatient->filter(element.nodes.p == context)
+		->sum(element.value) <= 1
 }
 
 // 2.2 Solution: "We also assume that all patients undergo surgery, and that
@@ -443,11 +452,15 @@ constraint with dayPatientTuple {
 	// operator `<=>` but since we do only allow one surgery per patient and
 	// also only one admission day per patient, this constraint effectively
 	// does the same but with way less helper constraints necessary.
-	mappings.aadp->filter(element.nodes.p == context.nodes.p & //
-		element.nodes.d == context.nodes.d)->sum(element.value)
+	mappings.assignedAdmissionDayToPatient->filter( //
+		element.nodes.p == context.nodes.p //
+		& element.nodes.d == context.nodes.d //
+	)->sum(element.value)
 	==
-	mappings.asp->filter(element.nodes.p == context.nodes.p & //
-		element.nodes.d == context.nodes.d)->sum(element.value)
+	mappings.assignedSurgeryToPatient->filter( //
+		element.nodes.p == context.nodes.p & //
+		element.nodes.d == context.nodes.d //
+	)->sum(element.value)
 }
 
 // 2.2 Solution: "A nurse can be assigned to more than one room in each shift
@@ -459,8 +472,10 @@ constraint with dayPatientTuple {
 //
 // This constraint ensures that there is at most one nurse per room per shift.
 constraint with roomShiftTuple {
-	mappings.anrs->filter(element.nodes.r == context.nodes.r & //
-		element.nodes.s == context.nodes.s)->sum(element.value)
+	mappings.assignedNurseToRoomOnShift->filter( //
+		element.nodes.r == context.nodes.r //
+		& element.nodes.s == context.nodes.s //
+	)->sum(element.value)
 	<= 1
 }
 
@@ -478,15 +493,17 @@ constraint with roomShiftTuple {
 	// there must be a nurse assigned to room `r` in shift `s` (that is part
 	// of day `d`).
 	[
-		mappings.roomDayLoad->filter( //
+		mappings.patientsInRoomOnDay->filter( //
 			element.nodes.r == context.nodes.r //
 			& element.nodes.d == context.nodes.s.day //
 		)->sum(element.variables.load) >= 1
 	]
 	<=>
 	[
-		mappings.anrs->filter(element.nodes.r == context.nodes.r & //
-			element.nodes.s == context.nodes.s)->sum(element.value) == 1
+		mappings.assignedNurseToRoomOnShift->filter( //
+			element.nodes.r == context.nodes.r //
+			& element.nodes.s == context.nodes.s //
+		)->sum(element.value) == 1
 	]
 }
 
@@ -499,20 +516,21 @@ constraint with roomShiftTuple {
 //
 // Unscheduled optional patients
 function electiveUnscheduledPatients with findOptionalPatient {
-	1 - mappings.aadp->filter(element.nodes.p == context.nodes.p) //
-		->sum(element.value)
+	1 - mappings.assignedAdmissionDayToPatient->filter( //
+			element.nodes.p == context.nodes.p //
+		)->sum(element.value)
 }
 
 // S7 Admission delay: The number of days between a patient’s release date
 // and their actual date of admission should be minimized.
-function admissionDelay with aadp {
+function admissionDelay with assignedAdmissionDayToPatient {
 	(context.nodes.d.id - context.nodes.p.surgeryReleaseDay) * context.value
 }
 
 // S5 Open OTs: The number of OTs opened on each day should be minimized.
 // Note that if an OT has no patients assigned for a particular day, it
 // should not open on that day.
-function openOTs with openedOTDay {
+function openOTs with openedOTOnDay {
 	context.value
 }
 
