@@ -822,6 +822,12 @@ constraint with openOTs {
 	mappings.selectedOperationDay->join((c, c))->sum(element.value)
 	<=
 	context.value * 1000
+	
+	&
+	
+	context.value
+	<=
+	mappings.selectedOperationDay->join((c, c))->sum(element.value) * 1000
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
