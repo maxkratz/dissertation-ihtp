@@ -115,6 +115,11 @@ public abstract class AbstractIhtcGipsRunner {
 	 * Gurobi parameter path.
 	 */
 	protected String parameterPath = projectFolder + "/../ihtcrunner/scripts/parameter.json";
+	
+	/**
+	 * If true, the removal of redundant/useless constraints will be disabled.
+	 */
+	private boolean disableUselessConstraintRemoval = false;
 
 	/**
 	 * Constructor for creating a new object. Initializes the logging.
@@ -241,10 +246,10 @@ public abstract class AbstractIhtcGipsRunner {
 
 		// Apply found solution
 		final long tick = System.nanoTime();
-		gipsApi.getAadp().applyNonZeroMappings(false);
-		gipsApi.getAnrs().applyNonZeroMappings(false);
-		gipsApi.getArp().applyNonZeroMappings(false);
-		gipsApi.getAsp().applyNonZeroMappings(false);
+		gipsApi.getAssignedAdmissionDayToPatient().applyNonZeroMappings(false);
+		gipsApi.getAssignedNurseToRoomOnShift().applyNonZeroMappings(false);
+		gipsApi.getAssignedRoomToPatient().applyNonZeroMappings(false);
+		gipsApi.getAssignedSurgeryToPatient().applyNonZeroMappings(false);
 		final long tock = System.nanoTime();
 		if (verbose) {
 			logger.info("=> GT rule application duration: " + (tock - tick) / 1_000_000_000 + "s.");
@@ -412,6 +417,18 @@ public abstract class AbstractIhtcGipsRunner {
 			gipsApi.getSolverConfig().setParameterPath(parameterPath);
 		}
 		gipsApi.getSolverConfig().setEnableOutput(verbose);
+		gipsApi.getConfig().setPrintUselessConstraintsStats(true);
+		gipsApi.getConfig().setUselessDuplicateConstraints(!disableUselessConstraintRemoval);
+	}
+	
+	/**
+	 * Sets the disabling of redundant/useless constraints to the given value.
+	 * 
+	 * @param disable If true, the removal of redundant/useless constraints will be
+	 *                disabled.
+	 */
+	public void setDisableUselessConstraintRemoval(final boolean disable) {
+		this.disableUselessConstraintRemoval = disable;
 	}
 
 }
