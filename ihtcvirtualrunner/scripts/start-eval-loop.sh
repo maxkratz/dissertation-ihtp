@@ -78,7 +78,7 @@ echo "#"
 echo "# => Eval loop script start."
 echo "#"
 
-for ((i=1;i<=1;i++));
+for ((i=1;i<=30;i++));
 do
     if [ $i -lt 10 ]; then
         run "./ihtc2024_competition_instances/i0$i.json" "./ihtc2024_competition_instances/i0${i}_solution.json"
