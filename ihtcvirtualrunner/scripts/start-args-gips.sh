@@ -22,7 +22,7 @@ function setup {
 
 function run {
     # Execute the program itself and save its output to logfile
-    java -Xmx240g -jar $JAR $ARGS 2>&1 | tee "./logs/$RUN_NAME.log"
+    java -Xmx250g -jar $JAR $ARGS 2>&1 | tee "./logs/$RUN_NAME.log"
 }
 
 # Set env vars
@@ -34,23 +34,13 @@ export JAR="gips-ihtc.jar"
 setup
 
 # Example arguments:
-# ./i01.json ./i01_solution.json
-# $1         $2
-#
-# or
-#
-# ./i01.json ./i01_solution.json 0
-# $1         $2                  $2
-#
-# or
-#
-# ./i01.json ./i01_solution.json 0 ./callback.json ./parameter.json
-# $1         #$2                 $3 $4             $5
-#
-# or
-#
 # ./i01.json ./i01_solution.json 0 ./callback.json ./parameter.json gt
 # $1         #$2                 $3 $4             $5               $6
+#
+# or
+#
+# ./i01.json ./i01_solution.json 0 ./callback.json ./parameter.json gt u
+# $1         #$2                 $3 $4             $5               $6 $7
 
 export inputJson=$1
 export outputJson=$2
@@ -58,9 +48,10 @@ export randomSeed=$3
 export callback=$4
 export parameter=$5
 export preprocessing=$6
+export constraintCleanUp=$7
 
 # Extract needed XMI files
-echo "=> Applying GIPS XMI workarounds."
+echo "# Script info: Applying GIPS XMI workarounds."
 
 # Extract XMI files
 unzip -qq -o $JAR "ihtcvirtualgipssolution/hipe/*/hipe-network.xmi"
@@ -71,21 +62,19 @@ unzip -qq -o $JAR "ihtcvirtualpreprocessing/api/ibex-patterns.xmi"
 
 # Actual run
 export RUN_NAME=$(date +%Y-%m-%d"_"%H-%M-%S)
-if [ ! -z "$randomSeed" ]; then
+if [ ! -z "$parameter" ] && [ ! -z "$callback" ] && [ ! -z "$preprocessing" ] && [ ! -z "$constraintCleanUp" ]; then
+    export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --preprocessing $preprocessing u"
+else
     if [ ! -z "$parameter" ] && [ ! -z "$callback" ] && [ ! -z "$preprocessing" ]; then
         export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --preprocessing $preprocessing"
-    fi
-    if [ ! -z "$parameter" ] && [ ! -z "$callback" ]; then
-        export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter"
     else
-        export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed"
+        echo "# Script error: Invalid combination of parameters."
+        exit 1
     fi
-else
-    export ARGS="-i $inputJson -o $outputJson --verbose"
 fi
 
 echo "#"
-echo "# => Using ARGS: $ARGS"
+echo "# Script info: Using ARGS: $ARGS"
 echo "#"
 run
 # Finished actual run
