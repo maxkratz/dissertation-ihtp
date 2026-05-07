@@ -721,7 +721,7 @@ constraint with surgeonPenalizedOTs {
 
 /* --------------------------------------------------------------------------------------------------------------------- */
 
-// S7: The number of days between a patient´s release date and their actual date of admission should be minimized.
+// S7: The number of days between a patient's release date and their actual date of admission should be minimized.
 function calculateWaitTime with selectedShiftToFirstWorkload {
 	((context.nodes.vsw.shift.shiftNo / 3) - context.nodes.p.earliestDay) * context.value
 }
