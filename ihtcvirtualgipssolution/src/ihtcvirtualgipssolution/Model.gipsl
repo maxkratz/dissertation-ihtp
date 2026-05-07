@@ -301,24 +301,9 @@ constraint with roomForShift {
 
 // Utility Constraint U3: saves the information if a gender is assigned to a room on a specific day.
 constraint with assignedGenderToRoomOnShift {
-	context.value
-	<=
-	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
-
-	&
-
-	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected)
-	<=
-	context.value * 1000
-
-//	Transformed version of the following boolean equivalence
-//	mappings.assignedPatientsToRoom->filter(
-//		element.nodes.p.gender == context.nodes.g.name &
-//		element.nodes.s == context.nodes.s &
-//		element.nodes.r == context.nodes.r
-//	)->sum(element.value) >= 1
-//	<=>
-//	context.value == 1
+	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected) >= 1
+	<==>
+	context.value == 1
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
@@ -377,39 +362,23 @@ constraint with countPatientsForRoom {
 // This constraint was previously implemented by an additional constraint, before it was added as a hard constraint by the IHTC.
 
 constraint with countPatientsForRoom {
-	// If the patient count is greater than 0 there has to be at least one nurse assigned for each shift on that day 
-	context.variables.patientCount
-	<=
-	types.VirtualShiftToRoster->join((shift, s))->sum(element.variables.isSelected) * 1000
-	&
-	context.variables.patientCount
-	<=
-	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
-		& element.shift.shiftNo == context.nodes.s.shiftNo + 1 //
-	)->sum(element.variables.isSelected) * 1000
-	&
-	context.variables.patientCount
-	<=
-	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
-		& element.shift.shiftNo == context.nodes.s.shiftNo + 2 //
-	)->sum(element.variables.isSelected) * 1000
-	&
-
-	// If there is a nurse assigned in any of the shifts there has to be at least one patient assigned to the room
-	types.VirtualShiftToRoster->join((shift, s))->sum(element.variables.isSelected)
-  	+
-	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
-		& element.shift.shiftNo == context.nodes.s.shiftNo + 1 //
-	)->sum(element.variables.isSelected)
-	+
-	types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
-		& element.shift.shiftNo == context.nodes.s.shiftNo + 2 //
-	)->sum(element.variables.isSelected)
-  	<= 
-  	context.variables.patientCount * 1000
-  	 
-  	&
-  	
+	// If the patient count is greater than 0 there has to be a nurse assigned for each shift on that day and vice versa
+	context.variables.patientCount >= 1
+	<==>
+	[
+		types.VirtualShiftToRoster->join((shift, s))->sum(element.variables.isSelected) == 1
+		&
+		types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
+			& element.shift.shiftNo == context.nodes.s.shiftNo + 1 //
+		)->sum(element.variables.isSelected) == 1
+		&
+		types.VirtualShiftToRoster->filter(element.shift.room == context.nodes.r //
+			& element.shift.shiftNo == context.nodes.s.shiftNo + 2 //
+		)->sum(element.variables.isSelected) == 1
+	]
+}
+ 
+constraint with countPatientsForRoom {
   	// A room can only be assigned to 1 or 0 nurses for each shift 
 	types.VirtualShiftToRoster->join((shift, s))->sum(element.variables.isSelected) <= 1
 	&
@@ -478,17 +447,17 @@ pattern firstVsw {
 	# p.isOccupant == false
 }
 constraint with firstVsw {
-	context.nodes.vsw.variables.isSelected
-	<=
-	mappings.selectedOperationDay->join((w, w))->sum(element.value)
+	context.nodes.vsw.variables.isSelected == 1
+	==> 
+	mappings.selectedOperationDay->join((w, w))->sum(element.value) == 1
 }
 
 // V2.2:  The virtual Node "VirtualWorkloadToCapacity" can only be added to the final model if
 // the the corresponding patient is also assigned to a room
 constraint with selectedOperationDay {
-	context.value
-	<=
-	types.VirtualShiftToWorkload->join((workload, w))->filter(element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.variables.isSelected)
+	context.value == 1
+	==>
+	types.VirtualShiftToWorkload->join((workload, w))->filter(element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.variables.isSelected) == 1
 }
 
 // V3: The stay of a patient can be extended by selecting a following Node "VirtualWorkloadToShift"
@@ -506,24 +475,13 @@ constraint with findExtendingShiftToWorkload {
 // Used as primary mapping for the information which nurses are assigned to which workloads of patients.
 // Needed for constraints: U14+U15(S4), U16(S3).
 constraint with assignedNursesToWorkload {
-	context.value
-	>=
-	context.nodes.vsw.variables.isSelected
-	+
-	context.nodes.vsr.variables.isSelected
-	- 1
-	
-	&
-	
-	context.nodes.vsw.variables.isSelected
-	>= 
-	context.value
-	
-	&
-	
-	context.nodes.vsr.variables.isSelected
-	>= 
-	context.value
+	context.value == 1
+	<==>
+	[
+		context.nodes.vsw.variables.isSelected == 1
+		&
+		context.nodes.vsr.variables.isSelected == 1
+	]
 }
 
 // U2: counts how many patients are currently assigned to each room.
@@ -549,91 +507,53 @@ function calculateAgeDifference with roomDayTuple {
 
 // U8: sets the mapping to true if the ageGroup is present in the room on a specific day.
 constraint with ageGroupsInRoom {
+	context.value == 1
+	<==>
 	types.VirtualShiftToWorkload->filter(
 		element.shift.room == context.nodes.r &
 		element.shift.shiftNo == context.nodes.d.number * 3 &
 		element.workload.patient.ageGroup == context.nodes.ag.group
-	)->sum(element.variables.isSelected)
-	<=
-	context.value * 1000
-
-	&
-
-	context.value
-	<=
-	types.VirtualShiftToWorkload->filter(
-		element.shift.room == context.nodes.r &
-		element.shift.shiftNo == context.nodes.d.number * 3 &
-		element.workload.patient.ageGroup == context.nodes.ag.group
-	)->sum(element.variables.isSelected)
+	)->sum(element.variables.isSelected) >= 1
 }
 
 // U17: Sets an auxiliary variable for expressing U9 without a boolean equivalence.
 constraint with ageGroupsInRoom {
+	context.variables.noSmallerAgeGroup == 1
+	<==>
 	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
 		element.nodes.ag.group < context.nodes.ag.group
-	)->sum(element.value)
-	>=
-	1 - context.variables.noSmallerAgeGroup
-
-	&
-
-	(1 - context.variables.noSmallerAgeGroup) * 1000
-	>=
-	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
-		element.nodes.ag.group < context.nodes.ag.group
-	)->sum(element.value)
+	)->sum(element.value) == 0
 }
 
 // U9: Sets the variable to true if the age group is the smallest in the room on that day.
 constraint with ageGroupsInRoom {
-	context.value
-	+
-	context.variables.noSmallerAgeGroup
-  	<=
- 	1 + context.variables.minAgeGroup
-
- 	&
-
- 	context.value
-	+
-	context.variables.noSmallerAgeGroup
-	>=
-	2 * context.variables.minAgeGroup
+	context.variables.minAgeGroup == 1
+	<==>
+	[
+		context.value == 1
+		&
+		context.variables.noSmallerAgeGroup == 1
+	]
 }
 
 // U18: Sets an auxiliary variable for expressing U10 without a boolean equivalence.
 constraint with ageGroupsInRoom {
+	context.variables.noGreaterAgeGroup == 1
+	<==>
 	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
 		element.nodes.ag.group > context.nodes.ag.group
-	)->sum(element.value)
-	>=
-	1 - context.variables.noGreaterAgeGroup
-
-	&
-
-	(1 - context.variables.noGreaterAgeGroup) * 1000
-	>=
-	mappings.ageGroupsInRoom->join((r, r), (d, d))->filter(
-		element.nodes.ag.group > context.nodes.ag.group
-	)->sum(element.value)
+	)->sum(element.value) == 0
 }
 
 // U10: Sets the variable to true if the age group is the greatest in the room on that day.
 constraint with ageGroupsInRoom {
-	context.value
-	+
-	context.variables.noGreaterAgeGroup
-  	<=
- 	1 + context.variables.maxAgeGroup
-
- 	&
-
- 	context.value
-	+
-	context.variables.noGreaterAgeGroup
-  	>=
- 	2 * context.variables.maxAgeGroup
+	context.variables.maxAgeGroup == 1
+	<==>
+	[
+		context.value == 1
+		&
+		context.variables.noGreaterAgeGroup == 1
+	]
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
@@ -665,15 +585,9 @@ function calculateContinuityOfCare with Patient {
 
 // U16: sets the mapping to true if the nurse is assigned to the patient.
 constraint with assignedNurseForPatient {
-	context.value
-	<=
-	mappings.assignedNursesToWorkload->join((n, n), (p, p))->sum(element.value)
-
-	&
-
-	mappings.assignedNursesToWorkload->join((n, n), (p, p))->sum(element.value)
-	<=
-	context.value * 1000
+	context.value == 1
+	<==>
+	mappings.assignedNursesToWorkload->join((n, n), (p, p))->sum(element.value) >= 1
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
@@ -706,15 +620,9 @@ function calculateOpenOTs with Day {
 
 // U4: sets the mapping to true if there is at least one surgery assigned to the OT on that day.
 constraint with openOTs {
-	mappings.selectedOperationDay->join((c, c))->sum(element.value)
-	<=
-	context.value * 1000
-	
-	&
-	
-	context.value
-	<=
-	mappings.selectedOperationDay->join((c, c))->sum(element.value) * 1000
+	mappings.selectedOperationDay->join((c, c))->sum(element.value) >= 1
+	<==>
+	context.value == 1
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
@@ -726,15 +634,9 @@ function calculateOTsPerSurgeon with surgeonPenalizedOTs {
 
 // U5: sets the mapping to true if the surgeon operates in the OT on that day.
 constraint with surgeonInOT {
-	mappings.selectedOperationDay->join((opTime, op), (relatedOT, inOT))->sum(element.value)
-	<=
-	context.value * 1000
-
-	&
-
-	context.value
-	<=
-	mappings.selectedOperationDay->join((opTime, op), (relatedOT, inOT))->sum(element.value)
+	context.value == 1
+	<==>
+	mappings.selectedOperationDay->join((opTime, op), (relatedOT, inOT))->sum(element.value) >= 1
 }
 
 // U6: counts the penalized OTs per surgeon for each day, which must be at greater or equal to 0.
