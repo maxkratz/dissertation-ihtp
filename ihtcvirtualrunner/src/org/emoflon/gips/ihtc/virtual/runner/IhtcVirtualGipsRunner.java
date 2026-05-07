@@ -182,15 +182,10 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 			int totalVars = 0;
 
 			// GT rule-based mappings
-			totalVars += logVarStats(gipsApi.getSelectedShiftToFirstWorkload());
-			totalVars += logVarStats(gipsApi.getSelectedExtendingShiftToWorkload());
-			totalVars += logVarStats(gipsApi.getSelectedOccupantNodes());
 			totalVars += logVarStats(gipsApi.getSelectedOperationDay());
-			totalVars += logVarStats(gipsApi.getSelectedShiftToRoster());
 
 			// utility mappings
 			totalVars += logVarStats(gipsApi.getCountPatientsForRoom());
-			totalVars += logVarStats(gipsApi.getAssignedPatientsToRoom());
 			totalVars += logVarStats(gipsApi.getAssignedGenderToRoomOnShift());
 			totalVars += logVarStats(gipsApi.getOpenOTs());
 			totalVars += logVarStats(gipsApi.getSurgeonInOT());
