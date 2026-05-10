@@ -16,6 +16,7 @@
 #
 
 # Disable OOM killer on system level
+echo "# Disable OOM killer on system level."
 sudo echo 2 > /proc/sys/vm/overcommit_memory
 
 # Configuration taken by the arguments
