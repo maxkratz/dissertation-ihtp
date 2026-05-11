@@ -2,9 +2,18 @@ package org.emoflon.gips.ihtc.virtual.runner;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
@@ -108,6 +117,12 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 	public String debugOutputPath;
 
 	/**
+	 * Boolean flag that must be set to `true` once the GIPS build process has
+	 * finished.
+	 */
+	private boolean gipsBuildDone = false;
+
+	/**
 	 * Creates a new instance of this class, sets up the logging, and derives all
 	 * paths that depend on the scenario file name.
 	 */
@@ -194,14 +209,50 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 	 * objective value to the console and throws an error if no solution could be
 	 * found.
 	 * 
-	 * @param gipsApi GIPS API to build and solve the ILP problem for.
-	 * @param verbose If true, the method will print some more information about the
-	 *                objective value.
+	 * @param gipsApi         GIPS API to build and solve the ILP problem for.
+	 * @param verbose         If true, the method will print some more information
+	 *                        about the objective value.
+	 * @param buildTimeLimit: Configures the time out value for the GIPS build
+	 *                        process in seconds.
 	 * @return Returns the objective value.
 	 */
-	protected double buildAndSolve(final GipsEngineAPI<?, ?> gipsApi, final boolean verbose) {
+	protected double buildAndSolve(final GipsEngineAPI<?, ?> gipsApi, final boolean verbose, final int buildTimeLimit) {
 		Objects.requireNonNull(gipsApi);
 		Objects.requireNonNull(verbose);
+
+		// If there is a reasonable GIPS build time limit, use it
+		if (buildTimeLimit > 0) {
+			logger.info("Starting GIPS build with time limit of " + buildTimeLimit + "s.");
+			final ExecutorService executor = Executors.newSingleThreadExecutor();
+			try {
+				// Schedule the GIPS build process
+				final List<Future<Object>> futures = executor.invokeAll(Arrays.asList(new GipsBuildWrapper(gipsApi)),
+						buildTimeLimit, TimeUnit.SECONDS);
+				// If the executor returned more than one future, something is broken
+				if (futures.size() != 1) {
+					throw new InternalError();
+				}
+				final Future<Object> buildFuture = futures.get(0);
+
+				try {
+					// Wait for the build process to finish/time out
+					buildFuture.get();
+				} catch (CancellationException ex) {
+					// If the execution was cancelled, a time out occurred
+					logger.warning(
+							"GIPS build process violated the build time limit. GIPS now terminates the Java process.");
+					System.exit(1);
+				} catch (ExecutionException ex) {
+					throw new RuntimeException(ex);
+				}
+			} catch (final InterruptedException ex) {
+				// Should not occur
+			}
+			executor.shutdown();
+		} else {
+			// else: execute GIPS build normally
+			gipsApi.buildProblemTimed(true, true);
+		}
 
 		gipsApi.buildProblemTimed(true, true); // Second Parameter: sequential = false/default, parallel = true
 		final SolverOutput output = gipsApi.solveProblemTimed();
@@ -222,6 +273,11 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 			logger.info("SOLVE_PROBLEM: " + measurements.get("SOLVE_PROBLEM").maxDurationSeconds() + "s.");
 		}
 		return output.objectiveValue();
+	}
+
+	protected double buildAndSolve(final GipsEngineAPI<?, ?> gipsApi, final boolean verbose) {
+		// Do not configure a time limit at all.
+		return buildAndSolve(gipsApi, verbose, 0);
 	}
 
 	/**
@@ -423,8 +479,48 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 	}
 
 	/**
+	 * Returns true if the GIPS build process has finished.
+	 * 
+	 * @return True if the GIPS build process has finished.
+	 */
+	public boolean isGipsBuildDone() {
+		return this.gipsBuildDone;
+	}
+
+	/**
 	 * Runs the execution of the configured scenario.
 	 */
 	protected abstract void run();
+
+	/**
+	 * Wraps the GIPS build problem (timed) call into a `Callable` object.
+	 */
+	private class GipsBuildWrapper implements Callable<Object> {
+		/**
+		 * The GIPS API object to build the MILP problem with.
+		 */
+		final GipsEngineAPI<?, ?> gipsApi;
+
+		/**
+		 * Creates a new instance of this wrapper class for the given GIPS API object.
+		 * 
+		 * @param gipsApi GIPS API object to build the wrapper class for.
+		 */
+		public GipsBuildWrapper(final GipsEngineAPI<?, ?> gipsApi) {
+			Objects.requireNonNull(gipsApi);
+			this.gipsApi = gipsApi;
+		}
+
+		/**
+		 * Call method to actually build the MILP problem. Always returns null.
+		 * 
+		 * @return null (in every case).
+		 */
+		@Override
+		public Object call() throws Exception {
+			gipsApi.buildProblemTimed(true, true);
+			return null;
+		}
+	}
 
 }

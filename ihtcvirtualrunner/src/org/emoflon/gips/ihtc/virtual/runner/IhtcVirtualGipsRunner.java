@@ -167,7 +167,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		// Run GIPS solution
 		//
 
-		buildAndSolve(gipsApi, verbose);
+		buildAndSolve(gipsApi, verbose, 30);
 		final long gipsSolvingDoneTime = System.nanoTime();
 
 		if (applicationNoGt) {
