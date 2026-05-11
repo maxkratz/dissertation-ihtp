@@ -233,8 +233,8 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 					buildFuture.get();
 				} catch (CancellationException ex) {
 					// If the execution was cancelled, a time out occurred
-					logger.warning(
-							"GIPS build process violated the build time limit. GIPS now terminates the Java process.");
+					logger.warning("GIPS build process violated the build time limit. "
+							+ "GIPS now terminates the Java process.");
 					System.exit(1);
 				} catch (ExecutionException ex) {
 					throw new RuntimeException(ex);
@@ -244,12 +244,11 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 			}
 			executor.shutdown();
 		} else {
-			logger.info("Starting GIPS build without any time limit.");
 			// else: execute GIPS build normally
-			gipsApi.buildProblemTimed(true, true);
+			logger.info("Starting GIPS build without any time limit.");
+			gipsApi.buildProblemTimed(true, true); // Second Parameter: sequential = false/default, parallel = true
 		}
 
-		gipsApi.buildProblemTimed(true, true); // Second Parameter: sequential = false/default, parallel = true
 		final SolverOutput output = gipsApi.solveProblemTimed();
 		if (output.solutionCount() == 0) {
 			gipsApi.terminate();
