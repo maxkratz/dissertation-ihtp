@@ -244,6 +244,7 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 			}
 			executor.shutdown();
 		} else {
+			logger.info("Starting GIPS build without any time limit.");
 			// else: execute GIPS build normally
 			gipsApi.buildProblemTimed(true, true);
 		}

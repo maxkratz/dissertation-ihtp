@@ -56,7 +56,12 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 	/**
 	 * Time limit for the (M)ILP solver.
 	 */
-	private int timeLimit = -1;
+	private int solveTimeLimit = -1;
+
+	/**
+	 * Time limit for the GIPS build process.
+	 */
+	private int buildTimeLimit = -1;
 
 	/**
 	 * Number of threads for the (M)ILP solver.
@@ -167,7 +172,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		// Run GIPS solution
 		//
 
-		buildAndSolve(gipsApi, verbose, 30);
+		buildAndSolve(gipsApi, verbose, buildTimeLimit);
 		final long gipsSolvingDoneTime = System.nanoTime();
 
 		if (applicationNoGt) {
@@ -379,8 +384,17 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 	 * 
 	 * @param timeLimit Time limit to set.
 	 */
-	public void setTimeLimit(final int timeLimit) {
-		this.timeLimit = timeLimit;
+	public void setSolveTimeLimit(final int timeLimit) {
+		this.solveTimeLimit = timeLimit;
+	}
+
+	/**
+	 * Sets the GIPS build time limit to the given value.
+	 * 
+	 * @param timeLimit Time limit to set.
+	 */
+	public void setBuildTimeLimit(final int timeLimit) {
+		this.buildTimeLimit = timeLimit;
 	}
 
 	/**
@@ -431,8 +445,8 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		Objects.requireNonNull(gipsApi);
 
 		gipsApi.getSolverConfig().setRandomSeed(randomSeed);
-		if (timeLimit != -1) {
-			gipsApi.getSolverConfig().setTimeLimit(timeLimit);
+		if (solveTimeLimit != -1) {
+			gipsApi.getSolverConfig().setTimeLimit(solveTimeLimit);
 		}
 		gipsApi.getSolverConfig().setThreadCount(threads);
 		if (callbackPath != null) {
