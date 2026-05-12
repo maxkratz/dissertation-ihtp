@@ -222,7 +222,7 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 				// Schedule the GIPS build process
 				final List<Future<Object>> futures = executor.invokeAll(Arrays.asList(new GipsBuildWrapper(gipsApi)),
 						buildTimeLimit, TimeUnit.SECONDS);
-				// If the executor returned more than one future, something is broken
+				// If the executor did not return exactly one future, something is broken
 				if (futures.size() != 1) {
 					throw new InternalError();
 				}
@@ -231,22 +231,26 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 				try {
 					// Wait for the build process to finish/time out
 					buildFuture.get();
-				} catch (CancellationException ex) {
+				} catch (final CancellationException ex) {
 					// If the execution was cancelled, a time out occurred
 					logger.warning("GIPS build process violated the build time limit. "
 							+ "GIPS now terminates the Java process.");
 					System.exit(1);
-				} catch (ExecutionException ex) {
+				} catch (final ExecutionException ex) {
 					throw new RuntimeException(ex);
 				}
 			} catch (final InterruptedException ex) {
+				logger.warning("Caught an InterruptedException.");
+				ex.printStackTrace();
 				// Should not occur
 			}
 			executor.shutdown();
 		} else {
 			// else: execute GIPS build normally
 			logger.info("Starting GIPS build without any time limit.");
-			gipsApi.buildProblemTimed(true, true); // Second Parameter: sequential = false/default, parallel = true
+			// First parameter: do update
+			// Second parameter: parallel build
+			gipsApi.buildProblemTimed(true, true);
 		}
 
 		final SolverOutput output = gipsApi.solveProblemTimed();
@@ -269,6 +273,16 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 		return output.objectiveValue();
 	}
 
+	/**
+	 * Builds and solves the MILP problem for the given GIPS API. Also prints the
+	 * objective value to the console and throws an error if no solution could be
+	 * found. This method does not include any build time limit.
+	 * 
+	 * @param gipsApi GIPS API to build and solve the ILP problem for.
+	 * @param verbose If true, the method will print some more information about the
+	 *                objective value.
+	 * @return Returns the objective value.
+	 */
 	protected double buildAndSolve(final GipsEngineAPI<?, ?> gipsApi, final boolean verbose) {
 		// Do not configure a time limit at all.
 		return buildAndSolve(gipsApi, verbose, 0);
