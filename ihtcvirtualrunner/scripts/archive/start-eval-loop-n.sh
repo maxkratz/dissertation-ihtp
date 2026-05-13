@@ -44,7 +44,7 @@ echo "# => Repetition script start."
 echo "# Number of repetitions: ${repetitions}."
 echo "#"
 
-for ((i=1;i<=3;i++));
+for ((i=1;i<=${repetitions};i++));
 do
     # Create output folder for this repetition run
     mkdir -p output/repetition_$i
