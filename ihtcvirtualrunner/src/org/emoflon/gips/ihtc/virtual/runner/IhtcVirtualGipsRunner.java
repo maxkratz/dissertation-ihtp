@@ -2,11 +2,15 @@ package org.emoflon.gips.ihtc.virtual.runner;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.emf.ecore.resource.Resource;
 import org.emoflon.gips.core.GipsMapper;
+import org.emoflon.gips.core.util.IMeasurement;
 import org.emoflon.gips.core.util.Observer;
+import org.emoflon.gips.core.util.SingleMeasurement;
 import org.emoflon.gips.ihtc.virtual.runner.utils.FileUtils;
 import org.emoflon.gips.ihtc.virtual.runner.utils.XmiSetupUtil;
 
@@ -56,7 +60,12 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 	/**
 	 * Time limit for the (M)ILP solver.
 	 */
-	private int timeLimit = -1;
+	private int solveTimeLimit = -1;
+
+	/**
+	 * Time limit for the GIPS build process.
+	 */
+	private int buildTimeLimit = -1;
 
 	/**
 	 * Number of threads for the (M)ILP solver.
@@ -110,25 +119,34 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 	@Override
 	public void run() {
 		checkIfFileExists(inputPath);
-		final long startTime = System.nanoTime();
+		Observer.getInstance().setCurrentSeries("Eval");
+		final SingleMeasurement totalMeasurement = new SingleMeasurement();
+		totalMeasurement.start();
 
 		//
 		// Convert JSON input file to XMI file
 		//
+
+		final SingleMeasurement loadMeasurement = new SingleMeasurement();
+		loadMeasurement.start();
 
 		if (verbose) {
 			logger.info("=> Start JSON model loader.");
 		}
 
 		transformJsonToModel(inputPath, instancePath);
-		final long modelLoadedTime = System.nanoTime();
+		loadMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "LOAD_MODEL", loadMeasurement);
 		if (verbose) {
-			logger.info("Runtime model load: " + tickTockToElapsedSeconds(startTime, modelLoadedTime) + "s.");
+			logger.info("Runtime model load: " + loadMeasurement.maxDurationSeconds() + "s.");
 		}
 
 		//
 		// Pre-processing via a separated GT rule set
 		//
+
+		final SingleMeasurement preprocMeasurement = new SingleMeasurement();
+		preprocMeasurement.start();
 
 		if (verbose) {
 			logger.info("=> Start pre-processing.");
@@ -139,25 +157,29 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		} else {
 			preprocess(instancePath, preprocessingPath);
 		}
-		final long preProcDoneTime = System.nanoTime();
+		preprocMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "PREPROC", preprocMeasurement);
 		if (verbose) {
-			logger.info("Runtime pre-processing: " + tickTockToElapsedSeconds(modelLoadedTime, preProcDoneTime) + "s.");
+			logger.info("Runtime pre-processing: " + preprocMeasurement.maxDurationSeconds() + "s.");
 		}
 
 		//
 		// Initialize GIPS API
 		//
 
+		final SingleMeasurement initMeasurement = new SingleMeasurement();
+		initMeasurement.start();
+
 		if (verbose) {
 			logger.info("=> Start GIPS init.");
 		}
 
-		Observer.getInstance().setCurrentSeries("Eval");
 		final IhtcvirtualgipssolutionGipsAPI gipsApi = new IhtcvirtualgipssolutionGipsAPI();
 		XmiSetupUtil.checkIfEclipseOrJarSetup(gipsApi, preprocessingPath);
-		final long gipsInitDoneTime = System.nanoTime();
+		initMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "INIT_GIPS", initMeasurement);
 		if (verbose) {
-			logger.info("Runtime GIPS init: " + tickTockToElapsedSeconds(preProcDoneTime, gipsInitDoneTime) + "s.");
+			logger.info("Runtime GIPS init: " + initMeasurement.maxDurationSeconds() + "s.");
 		}
 
 		// Set GIPS configuration parameters from this object
@@ -167,13 +189,25 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		// Run GIPS solution
 		//
 
-		buildAndSolve(gipsApi, verbose);
-		final long gipsSolvingDoneTime = System.nanoTime();
+		buildAndSolve(gipsApi, verbose, buildTimeLimit);
+
+		//
+		// Apply solution
+		//
+
+		final SingleMeasurement solutionApplicationMeasurement = new SingleMeasurement();
+		solutionApplicationMeasurement.start();
 
 		if (applicationNoGt) {
 			applySolutionNoGt(gipsApi, verbose);
 		} else {
 			applySolution(gipsApi, verbose);
+		}
+
+		solutionApplicationMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "SOLUTION_APPLICATION", solutionApplicationMeasurement);
+		if (verbose) {
+			logger.info("Runtime solution application: " + solutionApplicationMeasurement.maxDurationSeconds() + "s.");
 		}
 
 		// Print variable statistics for all mappers
@@ -202,66 +236,72 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 			logger.info("Total estimated number of variables: " + totalVars);
 		}
 
-		final long solutionApplicationDoneTime = System.nanoTime();
-		if (verbose) {
-			logger.info("Runtime solution application: "
-					+ tickTockToElapsedSeconds(gipsSolvingDoneTime, solutionApplicationDoneTime) + "s.");
-		}
+		//
+		// GIPS save
+		//
+
+		final SingleMeasurement gipsSaveMeasurement = new SingleMeasurement();
+		gipsSaveMeasurement.start();
+
 		gipsSave(gipsApi, gipsOutputPath);
-		final long gipsSaveDoneTime = System.nanoTime();
+		gipsSaveMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "GIPS_SAVE", gipsSaveMeasurement);
 		if (verbose) {
-			logger.info("Runtime GIPS save: " + tickTockToElapsedSeconds(solutionApplicationDoneTime, gipsSaveDoneTime)
-					+ "s.");
+			logger.info("Runtime GIPS save: " + gipsSaveMeasurement.maxDurationSeconds() + "s.");
 		}
 
 		//
 		// Model Validation
 		//
 
+		final SingleMeasurement modelValidateMeasurement = new SingleMeasurement();
+		modelValidateMeasurement.start();
+
 		if (verbose) {
 			logger.info("=> Start Model Validation");
 		}
+
 		validateModel(gipsOutputPath);
-		final long validateDoneTime = System.nanoTime();
+		modelValidateMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "MODEL_VALIDATE", modelValidateMeasurement);
 		if (verbose) {
-			logger.info(
-					"Runtime validate Model: " + tickTockToElapsedSeconds(gipsSaveDoneTime, validateDoneTime) + "s.");
+			logger.info("Runtime validate model: " + modelValidateMeasurement.maxDurationSeconds() + "s.");
 		}
 
 		//
 		// Export
 		//
 
+		final SingleMeasurement exportMeasurement = new SingleMeasurement();
+		exportMeasurement.start();
+
 		if (verbose) {
 			logger.info("=> Start JSON export.");
 		}
 
 		if (postProc) {
+			final SingleMeasurement postProcMeasurement = new SingleMeasurement();
+			postProcMeasurement.start();
 			if (verbose) {
 				logger.info("=> Start post-processing GT.");
 			}
 			postprocess(gipsOutputPath, postProcOutputPath);
-			final long postProcessingDoneTime = System.nanoTime();
+			postProcMeasurement.stop();
+			Observer.getInstance().addMeasurement("Eval", "POSTPROC", postProcMeasurement);
 			if (verbose) {
-				logger.info("Runtime post-processing: "
-						+ tickTockToElapsedSeconds(validateDoneTime, postProcessingDoneTime) + "s.");
+				logger.info("Runtime post-processing: " + postProcMeasurement.maxDurationSeconds() + "s.");
 			}
 			exportToJson(postProcOutputPath, outputPath);
-			final long exportDoneTime = System.nanoTime();
-			if (verbose) {
-				logger.info("Runtime JSON export (with post-processing): "
-						+ tickTockToElapsedSeconds(postProcessingDoneTime, exportDoneTime) + "s.");
-			}
 		} else {
 			if (verbose) {
 				logger.info("=> Skipped post-processing GT.");
 			}
 			exportToJsonNoPostProc(gipsOutputPath, outputPath);
-			final long exportDoneTime = System.nanoTime();
-			if (verbose) {
-				logger.info("Runtime JSON export (no post-processing): "
-						+ tickTockToElapsedSeconds(validateDoneTime, exportDoneTime) + "s.");
-			}
+		}
+		exportMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "EXPORT", exportMeasurement);
+		if (verbose) {
+			logger.info("Runtime export (total): " + exportMeasurement.maxDurationSeconds() + "s.");
 		}
 
 		//
@@ -269,9 +309,38 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		//
 
 		gipsApi.terminate();
-
+		totalMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "TOTAL", totalMeasurement);
 		if (verbose) {
-			logger.info("Runtime total: " + tickTockToElapsedSeconds(startTime, System.nanoTime()) + "s.");
+			logger.info("Runtime total: " + totalMeasurement.maxDurationSeconds() + "s.");
+		}
+
+		// Print all observer measurements
+		if (verbose) {
+			final Map<String, IMeasurement> measurements = new LinkedHashMap<>(
+					Observer.getInstance().getMeasurements("Eval"));
+			// Start
+			logger.info("LOAD_MODEL: " + measurements.get("LOAD_MODEL").maxDurationSeconds() + "s.");
+			logger.info("PREPROC: " + measurements.get("PREPROC").maxDurationSeconds() + "s.");
+
+			// GIPS
+			logger.info("INIT_GIPS: " + measurements.get("INIT_GIPS").maxDurationSeconds() + "s.");
+			logger.info("PM: " + measurements.get("PM").maxDurationSeconds() + "s.");
+			logger.info("BUILD_GIPS: " + measurements.get("BUILD_GIPS").maxDurationSeconds() + "s.");
+			logger.info("BUILD_SOLVER: " + measurements.get("BUILD_SOLVER").maxDurationSeconds() + "s.");
+			logger.info("BUILD: " + measurements.get("BUILD").maxDurationSeconds() + "s.");
+			logger.info("SOLVE_PROBLEM: " + measurements.get("SOLVE_PROBLEM").maxDurationSeconds() + "s.");
+			logger.info(
+					"SOLUTION_APPLICATION: " + measurements.get("SOLUTION_APPLICATION").maxDurationSeconds() + "s.");
+			logger.info("GIPS_SAVE: " + measurements.get("GIPS_SAVE").maxDurationSeconds() + "s.");
+
+			// End
+			logger.info("MODEL_VALIDATE: " + measurements.get("MODEL_VALIDATE").maxDurationSeconds() + "s.");
+			if (measurements.containsKey("POSTPROC")) {
+				logger.info("POSTPROC: " + measurements.get("POSTPROC").maxDurationSeconds() + "s.");
+			}
+			logger.info("EXPORT: " + measurements.get("EXPORT").maxDurationSeconds() + "s.");
+			logger.info("TOTAL: " + measurements.get("TOTAL").maxDurationSeconds() + "s.");
 		}
 	}
 
@@ -378,8 +447,17 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 	 * 
 	 * @param timeLimit Time limit to set.
 	 */
-	public void setTimeLimit(final int timeLimit) {
-		this.timeLimit = timeLimit;
+	public void setSolveTimeLimit(final int timeLimit) {
+		this.solveTimeLimit = timeLimit;
+	}
+
+	/**
+	 * Sets the GIPS build time limit to the given value.
+	 * 
+	 * @param timeLimit Time limit to set.
+	 */
+	public void setBuildTimeLimit(final int timeLimit) {
+		this.buildTimeLimit = timeLimit;
 	}
 
 	/**
@@ -430,8 +508,8 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		Objects.requireNonNull(gipsApi);
 
 		gipsApi.getSolverConfig().setRandomSeed(randomSeed);
-		if (timeLimit != -1) {
-			gipsApi.getSolverConfig().setTimeLimit(timeLimit);
+		if (solveTimeLimit != -1) {
+			gipsApi.getSolverConfig().setTimeLimit(solveTimeLimit);
 		}
 		gipsApi.getSolverConfig().setThreadCount(threads);
 		if (callbackPath != null) {
