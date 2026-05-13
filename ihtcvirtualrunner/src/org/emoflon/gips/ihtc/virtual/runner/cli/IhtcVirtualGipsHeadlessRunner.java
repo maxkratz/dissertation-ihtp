@@ -85,8 +85,11 @@ public class IhtcVirtualGipsHeadlessRunner {
 		}
 		runner.setVerbose(config.verbose);
 		runner.setRandomSeed(config.randomSeed);
-		if (config.timeLimit > 0) {
-			runner.setTimeLimit(config.timeLimit);
+		if (config.solveTimeLimit > 0) {
+			runner.setSolveTimeLimit(config.solveTimeLimit);
+		}
+		if (config.buildTimeLimit > 0) {
+			runner.setBuildTimeLimit(config.buildTimeLimit);
 		}
 		runner.setThreads(config.threads);
 		if (config.callbackPath != null) {
@@ -182,9 +185,14 @@ public class IhtcVirtualGipsHeadlessRunner {
 		options.addOption(randomSeed);
 
 		// Time limit for the (M)ILP solver
-		final Option timeLimit = new Option("t", "timelimit", true, "time limit for the (M)ILP solver");
-		timeLimit.setRequired(false);
-		options.addOption(timeLimit);
+		final Option solveTimeLimit = new Option("s", "solve_timelimit", true, "time limit for the (M)ILP solver");
+		solveTimeLimit.setRequired(false);
+		options.addOption(solveTimeLimit);
+
+		// Time limit for the GIPS build process
+		final Option buildTimeLimit = new Option("b", "build_timelimit", true, "time limit for the GIPS build proces");
+		buildTimeLimit.setRequired(false);
+		options.addOption(buildTimeLimit);
 
 		// Number of threads to use for the (M)ILP solver
 		final Option threads = new Option("p", "threads", true, "number of threads to use for the (M)ILP solver");
@@ -237,7 +245,8 @@ public class IhtcVirtualGipsHeadlessRunner {
 				cmd.hasOption("outputxmi") ? cmd.getOptionValue("outputxmi") : null, //
 				cmd.hasOption("verbose"), //
 				cmd.hasOption("randomseed") ? Integer.valueOf(cmd.getOptionValue("randomseed")) : 0, //
-				cmd.hasOption("timelimit") ? Integer.valueOf(cmd.getOptionValue("timelimit")) : -1, //
+				cmd.hasOption("solve_timelimit") ? Integer.valueOf(cmd.getOptionValue("solve_timelimit")) : -1, //
+				cmd.hasOption("build_timelimit") ? Integer.valueOf(cmd.getOptionValue("build_timelimit")) : -1, //
 				cmd.hasOption("threads") ? Integer.valueOf(cmd.getOptionValue("threads")) : 0, //
 				cmd.hasOption("callback") ? cmd.getOptionValue("callback") : null, //
 				cmd.hasOption("parameter") ? cmd.getOptionValue("parameter") : null, //
@@ -250,8 +259,8 @@ public class IhtcVirtualGipsHeadlessRunner {
 	 * Record to hold the parsed CLI configuration parameters.
 	 */
 	private record CliConfig(String inputJsonPath, String outputJsonPath, String inputXmiPath, String outputXmiPath,
-			boolean verbose, int randomSeed, int timeLimit, int threads, String callbackPath, String parameterPath,
-			String preprocessing, boolean disableUselessConstraintRemoval) {
+			boolean verbose, int randomSeed, int solveTimeLimit, int buildTimeLimit, int threads, String callbackPath,
+			String parameterPath, String preprocessing, boolean disableUselessConstraintRemoval) {
 	}
 
 	/**
