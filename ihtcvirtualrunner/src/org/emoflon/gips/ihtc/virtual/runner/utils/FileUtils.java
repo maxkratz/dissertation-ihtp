@@ -213,6 +213,18 @@ public class FileUtils {
 	}
 
 	/**
+	 * Checks if a folder exists at the given path.
+	 * 
+	 * @param path Path to check for folder existence.
+	 * @return True if folder exists, false otherwise.
+	 */
+	public static boolean checkIfFolderExists(final String path) {
+		Objects.requireNonNull(path);
+		final File f = new File(path);
+		return f.exists() && f.isDirectory();
+	}
+
+	/**
 	 * Deletes the file with the given file path if it is not a directory.
 	 * 
 	 * @param path File path to delete file on.
