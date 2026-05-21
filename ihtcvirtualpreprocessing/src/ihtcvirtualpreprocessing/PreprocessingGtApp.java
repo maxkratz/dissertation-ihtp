@@ -115,6 +115,8 @@ public class PreprocessingGtApp extends IhtcvirtualpreprocessingHiPEApp {
 	 * Executes the GT rules of this app according to the configuration.
 	 */
 	public void run() {
+		logger.info("Started pre-processing with GT.");
+
 		// Create the API object
 		final IhtcvirtualpreprocessingAPI api = setup( //
 				"./ihtcvirtualpreprocessing/hipe/engine/hipe-network.xmi", //
