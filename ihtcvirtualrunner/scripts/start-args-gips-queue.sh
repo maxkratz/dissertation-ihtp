@@ -58,7 +58,7 @@ function run_wrap_all {
     setup
 
     # Actual run
-    export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --preprocessing $preprocessing"
+    export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --preprocessing $preprocessing --build_timelimit $buildTimeout"
 
     echo "# Script info: Using ARGS: $ARGS"
     run_experiment
@@ -77,8 +77,8 @@ source env.sh
 export JAR="gips-ihtc.jar"
 
 # Example arguments:
-# ./input i01.json ./output 0  ./callback.json ./parameter.json gt 3600 u
-# $1      $2       $3       $4 $5              $6               $7 $8   $9
+# ./input i01.json ./output 0  ./callback.json ./parameter.json gt 3600 300 u
+# $1      $2       $3       $4 $5              $6               $7 $8   $9  $10
 
 export inputFolder=$1
 export inputJsonName=$2
@@ -90,7 +90,8 @@ export callback=$5
 export parameter=$6
 export preprocessing=$7
 export globalTimeout=$8
-export constraintCleanUp=$9
+export buildTimeout=$9
+export constraintCleanUp=${10}
 
 # Verify arguments
 if [ -z ${inputFolder+x} ]; then
@@ -123,6 +124,10 @@ if [ -z ${preprocessing+x} ]; then
 fi
 if [ -z ${globalTimeout+x} ]; then
     echo "Error: no global timeout value given. Exit."
+    exit 1;
+fi
+if [ -z ${buildTimeout+x} ]; then
+    echo "Error: no build timeout value given. Exit."
     exit 1;
 fi
 

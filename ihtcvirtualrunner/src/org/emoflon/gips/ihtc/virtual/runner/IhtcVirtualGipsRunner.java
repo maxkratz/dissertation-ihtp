@@ -2,13 +2,10 @@ package org.emoflon.gips.ihtc.virtual.runner;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.emf.ecore.resource.Resource;
 import org.emoflon.gips.core.GipsMapper;
-import org.emoflon.gips.core.util.IMeasurement;
 import org.emoflon.gips.core.util.Observer;
 import org.emoflon.gips.core.util.SingleMeasurement;
 import org.emoflon.gips.ihtc.virtual.runner.utils.FileUtils;
@@ -137,9 +134,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		transformJsonToModel(inputPath, instancePath);
 		loadMeasurement.stop();
 		Observer.getInstance().addMeasurement("Eval", "LOAD_MODEL", loadMeasurement);
-		if (verbose) {
-			logger.info("Runtime model load: " + loadMeasurement.maxDurationSeconds() + "s.");
-		}
+		logObserverMeasurement("LOAD_MODEL", verbose);
 
 		//
 		// Pre-processing via a separated GT rule set
@@ -159,9 +154,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		}
 		preprocMeasurement.stop();
 		Observer.getInstance().addMeasurement("Eval", "PREPROC", preprocMeasurement);
-		if (verbose) {
-			logger.info("Runtime pre-processing: " + preprocMeasurement.maxDurationSeconds() + "s.");
-		}
+		logObserverMeasurement("PREPROC", verbose);
 
 		//
 		// Initialize GIPS API
@@ -178,9 +171,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		XmiSetupUtil.checkIfEclipseOrJarSetup(gipsApi, preprocessingPath);
 		initMeasurement.stop();
 		Observer.getInstance().addMeasurement("Eval", "INIT_GIPS", initMeasurement);
-		if (verbose) {
-			logger.info("Runtime GIPS init: " + initMeasurement.maxDurationSeconds() + "s.");
-		}
+		logObserverMeasurement("INIT_GIPS", verbose);
 
 		// Set GIPS configuration parameters from this object
 		setGipsConfig(gipsApi);
@@ -206,9 +197,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 
 		solutionApplicationMeasurement.stop();
 		Observer.getInstance().addMeasurement("Eval", "SOLUTION_APPLICATION", solutionApplicationMeasurement);
-		if (verbose) {
-			logger.info("Runtime solution application: " + solutionApplicationMeasurement.maxDurationSeconds() + "s.");
-		}
+		logObserverMeasurement("SOLUTION_APPLICATION", verbose);
 
 		// Print variable statistics for all mappers
 		if (verbose) {
@@ -246,9 +235,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		gipsSave(gipsApi, gipsOutputPath);
 		gipsSaveMeasurement.stop();
 		Observer.getInstance().addMeasurement("Eval", "GIPS_SAVE", gipsSaveMeasurement);
-		if (verbose) {
-			logger.info("Runtime GIPS save: " + gipsSaveMeasurement.maxDurationSeconds() + "s.");
-		}
+		logObserverMeasurement("GIPS_SAVE", verbose);
 
 		//
 		// Model Validation
@@ -264,9 +251,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		validateModel(gipsOutputPath);
 		modelValidateMeasurement.stop();
 		Observer.getInstance().addMeasurement("Eval", "MODEL_VALIDATE", modelValidateMeasurement);
-		if (verbose) {
-			logger.info("Runtime validate model: " + modelValidateMeasurement.maxDurationSeconds() + "s.");
-		}
+		logObserverMeasurement("MODEL_VALIDATE", verbose);
 
 		//
 		// Export
@@ -288,9 +273,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 			postprocess(gipsOutputPath, postProcOutputPath);
 			postProcMeasurement.stop();
 			Observer.getInstance().addMeasurement("Eval", "POSTPROC", postProcMeasurement);
-			if (verbose) {
-				logger.info("Runtime post-processing: " + postProcMeasurement.maxDurationSeconds() + "s.");
-			}
+			logObserverMeasurement("POSTPROC", verbose);
 			exportToJson(postProcOutputPath, outputPath);
 		} else {
 			if (verbose) {
@@ -300,9 +283,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		}
 		exportMeasurement.stop();
 		Observer.getInstance().addMeasurement("Eval", "EXPORT", exportMeasurement);
-		if (verbose) {
-			logger.info("Runtime export (total): " + exportMeasurement.maxDurationSeconds() + "s.");
-		}
+		logObserverMeasurement("EXPORT", verbose);
 
 		//
 		// The end
@@ -311,37 +292,7 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 		gipsApi.terminate();
 		totalMeasurement.stop();
 		Observer.getInstance().addMeasurement("Eval", "TOTAL", totalMeasurement);
-		if (verbose) {
-			logger.info("Runtime total: " + totalMeasurement.maxDurationSeconds() + "s.");
-		}
-
-		// Print all observer measurements
-		if (verbose) {
-			final Map<String, IMeasurement> measurements = new LinkedHashMap<>(
-					Observer.getInstance().getMeasurements("Eval"));
-			// Start
-			logger.info("LOAD_MODEL: " + measurements.get("LOAD_MODEL").maxDurationSeconds() + "s.");
-			logger.info("PREPROC: " + measurements.get("PREPROC").maxDurationSeconds() + "s.");
-
-			// GIPS
-			logger.info("INIT_GIPS: " + measurements.get("INIT_GIPS").maxDurationSeconds() + "s.");
-			logger.info("PM: " + measurements.get("PM").maxDurationSeconds() + "s.");
-			logger.info("BUILD_GIPS: " + measurements.get("BUILD_GIPS").maxDurationSeconds() + "s.");
-			logger.info("BUILD_SOLVER: " + measurements.get("BUILD_SOLVER").maxDurationSeconds() + "s.");
-			logger.info("BUILD: " + measurements.get("BUILD").maxDurationSeconds() + "s.");
-			logger.info("SOLVE_PROBLEM: " + measurements.get("SOLVE_PROBLEM").maxDurationSeconds() + "s.");
-			logger.info(
-					"SOLUTION_APPLICATION: " + measurements.get("SOLUTION_APPLICATION").maxDurationSeconds() + "s.");
-			logger.info("GIPS_SAVE: " + measurements.get("GIPS_SAVE").maxDurationSeconds() + "s.");
-
-			// End
-			logger.info("MODEL_VALIDATE: " + measurements.get("MODEL_VALIDATE").maxDurationSeconds() + "s.");
-			if (measurements.containsKey("POSTPROC")) {
-				logger.info("POSTPROC: " + measurements.get("POSTPROC").maxDurationSeconds() + "s.");
-			}
-			logger.info("EXPORT: " + measurements.get("EXPORT").maxDurationSeconds() + "s.");
-			logger.info("TOTAL: " + measurements.get("TOTAL").maxDurationSeconds() + "s.");
-		}
+		logObserverMeasurement("TOTAL", verbose);
 	}
 
 	/**
