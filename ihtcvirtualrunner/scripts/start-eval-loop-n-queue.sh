@@ -26,6 +26,7 @@ export callback="./callback.json"
 export parameter="./parameter.json"
 export preprocessing="nogt"
 export timeoutPerExperiment=600
+export timeoutBuild=300
 export constraintCleanup="u"
 
 if [ -z "$repetitions" ]; then
@@ -45,6 +46,7 @@ function create_job {
             $parameter \
             $preprocessing \
             $timeoutPerExperiment \
+            $timeoutBuild \
             $constraintCleanup
 }
 
