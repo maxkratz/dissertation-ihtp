@@ -3,7 +3,9 @@ package org.emoflon.gips.ihtc.virtual.runner;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -23,6 +25,7 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.emoflon.gips.core.api.GipsEngineAPI;
 import org.emoflon.gips.core.milp.SolverOutput;
+import org.emoflon.gips.core.util.IMeasurement;
 import org.emoflon.gips.core.util.Observer;
 import org.emoflon.gips.ihtc.virtual.runner.utils.FileUtils;
 import org.emoflon.smartemf.persistence.SmartEMFResourceFactoryImpl;
@@ -251,7 +254,13 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 			gipsApi.buildProblemTimed(true, true);
 		}
 
+		logObserverMeasurement("PM", verbose);
+		logObserverMeasurement("BUILD_GIPS", verbose);
+		logObserverMeasurement("BUILD_SOLVER", verbose);
+		logObserverMeasurement("BUILD", verbose);
+
 		try (final SolverOutput output = gipsApi.solveProblemTimed()) {
+			logObserverMeasurement("SOLVE_PROBLEM", verbose);
 			if (output.solutionCount() == 0) {
 				gipsApi.terminate();
 				logger.warning("No solution found. Aborting.");
@@ -484,6 +493,26 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 			throw new IllegalArgumentException("Given tick or tock was below zero.");
 		}
 		return 1.0 * (tock - tick) / 1_000_000_000;
+	}
+
+	/**
+	 * Logs the measurement value of the given measurements name to console if the
+	 * `verbose` flag is activated and a corresponding measurement has already been
+	 * recorded.
+	 * 
+	 * @param measurementName Measurement name to log the corresponding
+	 *                        measurement's value for.
+	 * @param verbose         If false, nothing will be logged.
+	 */
+	protected void logObserverMeasurement(final String measurementName, final boolean verbose) {
+		Objects.requireNonNull(measurementName);
+		if (verbose) {
+			final Map<String, IMeasurement> measurements = new LinkedHashMap<>(
+					Observer.getInstance().getMeasurements("Eval"));
+			if (measurements.containsKey(measurementName)) {
+				logger.info(measurementName + ": " + measurements.get(measurementName).maxDurationSeconds() + "s.");
+			}
+		}
 	}
 
 	/**
