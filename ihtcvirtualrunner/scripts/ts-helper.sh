@@ -36,27 +36,29 @@ check_id () {
     fi
 }
 
+tspe="systemd-run --user --unit=tsp-protected -p OOMScoreAdjust=-900 tsp"
+
 # Determine what to do
 if [ $command = "clear" ]; then
     echo "ts-helper: clear"
-    tsp -C
+    $tspe -C
 elif [ $command = "killall" ]; then
     echo "ts-helper: kill server"
-    tsp -K
+    $tspe -K
 elif [ $command = "list" ]; then
     echo "ts-helper: list"
-    tsp -l
+    $tspe -l
 elif [ $command = "cat" ]; then
     check_id
     echo "ts-helper: cat job $id"
-    tsp -c $id
+    $tspe -c $id
 elif [ $command = "remove" ]; then
     check_id
     echo "ts-helper: remove job $id"
-    tsp -r $id
+    $tspe -r $id
 elif [ $command = "add" ]; then
     echo "ts-helper: add job"
-    tsp $remains
+    $tspe $remains
 else
     echo "Command $command not recognized. Exit."
     exit 1;

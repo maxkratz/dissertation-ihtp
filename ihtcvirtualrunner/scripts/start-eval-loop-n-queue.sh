@@ -17,7 +17,7 @@
 
 # Disable OOM killer on system level
 echo "# Disable OOM killer on system level."
-sudo bash -c 'echo 2 > /proc/sys/vm/overcommit_memory'
+# sudo bash -c 'echo 2 > /proc/sys/vm/overcommit_memory'
 
 # Configuration taken by the arguments
 export repetitions=$1
@@ -37,6 +37,7 @@ fi
 function create_job {
     ./ts-helper.sh \
         add \
+        tsp systemd-run --user --unit=gips-oom -p OOMScoreAdjust=300 \
         ./start-args-gips-queue.sh \
             $1 \
             $2 \
