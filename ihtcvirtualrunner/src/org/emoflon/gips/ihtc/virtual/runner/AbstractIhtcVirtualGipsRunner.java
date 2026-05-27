@@ -30,6 +30,8 @@ import org.emoflon.gips.core.util.Observer;
 import org.emoflon.gips.ihtc.virtual.runner.utils.FileUtils;
 import org.emoflon.smartemf.persistence.SmartEMFResourceFactoryImpl;
 
+import com.gurobi.gurobi.GRBException;
+
 import ihtcvirtualgipssolution.api.gips.IhtcvirtualgipssolutionGipsAPI;
 import ihtcvirtualmetamodel.Root;
 import ihtcvirtualmetamodel.importexport.JsonToModelLoader;
@@ -238,6 +240,16 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 							+ "GIPS now terminates the Java process.");
 					System.exit(1);
 				} catch (final ExecutionException ex) {
+					// Check if cause was a Gurobi OOM error during build
+					if (ex.getCause() instanceof GRBException gurobiException) {
+						if (gurobiException.getMessage() != null
+								&& gurobiException.getMessage().contains("Out of memory")) {
+							logger.warning("GIPS building threw an OOM error. GIPS now terminates the Java process.");
+							System.exit(1);
+						}
+					}
+
+					// All other cases
 					throw new RuntimeException(ex);
 				}
 			} catch (final InterruptedException ex) {
