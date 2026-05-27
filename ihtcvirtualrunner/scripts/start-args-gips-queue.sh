@@ -58,7 +58,7 @@ function run_wrap_all {
     setup
 
     # Actual run
-    if [ ${constraintCleanUp} = "u" ]; then
+    if [[ "$constraintCleanUp" = "u" ]]; then
         export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --preprocessing $preprocessing --build_timelimit $buildTimeout"
     else
         echo "Disabling GIPS constraint clean-up."
