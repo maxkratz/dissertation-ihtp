@@ -18,6 +18,7 @@
 # Disable OOM killer on system level
 echo "# Disable OOM killer on system level."
 sudo bash -c 'echo 2 > /proc/sys/vm/overcommit_memory'
+sudo bash -c 'echo 99 > overcommit_ratio'
 
 # Configuration taken by the arguments
 export repetitions=$1
