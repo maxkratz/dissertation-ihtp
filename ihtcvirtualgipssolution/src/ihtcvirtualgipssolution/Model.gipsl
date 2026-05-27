@@ -448,7 +448,7 @@ constraint with mandatoryPatients {
 	mappings.selectedShiftToFirstWorkload->join((p, p))->sum(element.value)
 	== 1
 	&
-	mappings.selectedOperationDay->join((p, p))->sum(element.value)== 1
+	mappings.selectedOperationDay->join((p, p))->sum(element.value) == 1
 }
 
 /* ----------------------------------------------------------------------- */
