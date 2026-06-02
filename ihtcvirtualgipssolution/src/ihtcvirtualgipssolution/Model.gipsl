@@ -2,7 +2,7 @@ package "ihtcvirtualgipssolution"
 import "platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
 
 config {
-	solver := GUROBI;
+	solver := OR_TOOLS;
 	timeLimit := true [value := 300.0]; // 5 min
 	randomSeed := true [value := 0];
 	presolve := auto;
