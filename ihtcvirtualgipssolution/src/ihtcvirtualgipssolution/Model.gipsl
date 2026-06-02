@@ -3,7 +3,7 @@ import "platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore
 
 config {
 	solver := OR_TOOLS;
-	timeLimit := true [value := 300.0]; // 5 min
+	timeLimit := true [value := 60.0]; // 1 min
 	randomSeed := true [value := 0];
 	presolve := auto;
 	debugOutput := true;
