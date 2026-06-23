@@ -125,7 +125,7 @@ public class GTRuleAutomator {
      * Generate the conversion rule (e.g., virtualShiftToWorkload_to_derived)
      */
     private void generateConversionRule(VirtualNodeInfo info) {
-        // Convert to camelCase (first letter lowercase)
+        // Convert to camelCase
         String camelCaseClass = info.className.substring(0, 1).toLowerCase() + 
                                 info.className.substring(1);
         String ruleName = camelCaseClass + "_to_derived";
@@ -203,13 +203,6 @@ public class GTRuleAutomator {
     }
     
     /**
-     * Get capitalized name for virtual reference (e.g., "Shift" -> "Shift")
-     */
-    private String getCapitalizedVirtualName(String className) {
-        return className;
-    }
-    
-    /**
      * Write the generated GT rules to a file
      */
     public void writeToFile(String outputPath) throws IOException {
@@ -222,7 +215,7 @@ public class GTRuleAutomator {
         
         // Write the file (creates if doesn't exist, overwrites if does)
         Files.write(path, gtContent.toString().getBytes());
-        System.out.println("✅ Generated: " + outputPath);
+        System.out.println("\nGenerated at: " + outputPath);
     }
     
     /**
@@ -241,6 +234,6 @@ public class GTRuleAutomator {
         automator.generateRules();
         automator.writeToFile("src/ihtcvirtualpostprocessing/PostProcessingGTRules.gt");
         
-        System.out.println("\n✅ GT Rules generated successfully!");
+        System.out.println("GT Rules generated successfully");
     }
 }
