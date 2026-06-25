@@ -44,6 +44,11 @@ function run_experiment {
 
     # Move Gurobi's log file to the repetition's output folder
     mv Gurobi*.log $outputFolder
+    
+    # Move JDK's crash log file to output folder (if any)
+    if [ $(ls hs_err_*.log 2>/dev/null | wc -l) -gt 0 ]; then
+    	mv hs_err_*.log $outputFolder
+    fi
 }
 
 function cleanup {
