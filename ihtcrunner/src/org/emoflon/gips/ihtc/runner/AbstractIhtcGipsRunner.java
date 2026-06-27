@@ -115,7 +115,7 @@ public abstract class AbstractIhtcGipsRunner {
 	 * Gurobi parameter path.
 	 */
 	protected String parameterPath = projectFolder + "/../ihtcrunner/scripts/parameter.json";
-	
+
 	/**
 	 * If true, the removal of redundant/useless constraints will be disabled.
 	 */
@@ -420,7 +420,7 @@ public abstract class AbstractIhtcGipsRunner {
 		gipsApi.getConfig().setPrintUselessConstraintsStats(true);
 		gipsApi.getConfig().setUselessDuplicateConstraints(!disableUselessConstraintRemoval);
 	}
-	
+
 	/**
 	 * Sets the disabling of redundant/useless constraints to the given value.
 	 * 
@@ -429,6 +429,26 @@ public abstract class AbstractIhtcGipsRunner {
 	 */
 	public void setDisableUselessConstraintRemoval(final boolean disable) {
 		this.disableUselessConstraintRemoval = disable;
+	}
+
+	/**
+	 * Logs the measurement value of the given measurements name to console if the
+	 * `verbose` flag is activated and a corresponding measurement has already been
+	 * recorded.
+	 * 
+	 * @param measurementName Measurement name to log the corresponding
+	 *                        measurement's value for.
+	 * @param verbose         If false, nothing will be logged.
+	 */
+	protected void logObserverMeasurement(final String measurementName, final boolean verbose) {
+		Objects.requireNonNull(measurementName);
+		if (verbose) {
+			final Map<String, IMeasurement> measurements = new LinkedHashMap<>(
+					Observer.getInstance().getMeasurements("Eval"));
+			if (measurements.containsKey(measurementName)) {
+				logger.info(measurementName + ": " + measurements.get(measurementName).maxDurationSeconds() + "s.");
+			}
+		}
 	}
 
 }

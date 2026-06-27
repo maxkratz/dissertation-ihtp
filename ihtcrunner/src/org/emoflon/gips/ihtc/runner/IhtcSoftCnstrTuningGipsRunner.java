@@ -3,6 +3,7 @@ package org.emoflon.gips.ihtc.runner;
 import java.util.Objects;
 
 import org.emoflon.gips.core.util.Observer;
+import org.emoflon.gips.core.util.SingleMeasurement;
 import org.emoflon.gips.ihtc.runner.utils.XmiSetupUtil;
 
 import ihtcgipssolution.softcnstrtuning.api.gips.SoftcnstrtuningGipsAPI;
@@ -38,25 +39,32 @@ public class IhtcSoftCnstrTuningGipsRunner extends AbstractIhtcGipsRunner {
 	@Override
 	public void run() {
 		checkIfFileExists(inputPath);
-		final long startTime = System.nanoTime();
+		Observer.getInstance().setCurrentSeries("Eval");
+		final SingleMeasurement totalMeasurement = new SingleMeasurement();
+		totalMeasurement.start();
 
 		//
 		// Convert JSON input file to XMI file
 		//
+
+		final SingleMeasurement loadMeasurement = new SingleMeasurement();
+		loadMeasurement.start();
 
 		if (verbose) {
 			logger.info("=> Start JSON model loader.");
 		}
 
 		transformJsonToModel(inputPath, instancePath);
-		final long modelLoadedTime = System.nanoTime();
-		if (verbose) {
-			logger.info("Runtime model load: " + tickTockToElapsedSeconds(startTime, modelLoadedTime) + "s.");
-		}
+		loadMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "LOAD_MODEL", loadMeasurement);
+		logObserverMeasurement("LOAD_MODEL", verbose);
 
 		//
 		// Initialize GIPS API
 		//
+
+		final SingleMeasurement initMeasurement = new SingleMeasurement();
+		initMeasurement.start();
 
 		if (verbose) {
 			logger.info("=> Start GIPS init.");
@@ -65,10 +73,9 @@ public class IhtcSoftCnstrTuningGipsRunner extends AbstractIhtcGipsRunner {
 		Observer.getInstance().setCurrentSeries("Eval");
 		final SoftcnstrtuningGipsAPI gipsApi = new SoftcnstrtuningGipsAPI();
 		XmiSetupUtil.checkIfEclipseOrJarSetup(gipsApi, instancePath);
-		final long gipsInitDoneTime = System.nanoTime();
-		if (verbose) {
-			logger.info("Runtime GIPS init: " + tickTockToElapsedSeconds(startTime, gipsInitDoneTime) + "s.");
-		}
+		initMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "INIT_GIPS", initMeasurement);
+		logObserverMeasurement("INIT_GIPS", verbose);
 
 		// Set GIPS configuration parameters from this object
 		setGipsConfig(gipsApi);
@@ -78,44 +85,54 @@ public class IhtcSoftCnstrTuningGipsRunner extends AbstractIhtcGipsRunner {
 		//
 
 		buildAndSolve(gipsApi, verbose);
-		final long gipsSolvingDoneTime = System.nanoTime();
 
+		//
+		// Apply solution
+		//
+
+		final SingleMeasurement solutionApplicationMeasurement = new SingleMeasurement();
+		solutionApplicationMeasurement.start();
 		applySolution(gipsApi, verbose);
+		solutionApplicationMeasurement.stop();
 
-		final long solutionApplicationDoneTime = System.nanoTime();
-		if (verbose) {
-			logger.info("Runtime solution application: "
-					+ tickTockToElapsedSeconds(gipsSolvingDoneTime, solutionApplicationDoneTime) + "s.");
-		}
+		Observer.getInstance().addMeasurement("Eval", "SOLUTION_APPLICATION", solutionApplicationMeasurement);
+		logObserverMeasurement("SOLUTION_APPLICATION", verbose);
+
+		//
+		// GIPS save
+		//
+
+		final SingleMeasurement gipsSaveMeasurement = new SingleMeasurement();
+		gipsSaveMeasurement.start();
+
 		gipsSave(gipsApi, gipsOutputPath);
-		final long gipsSaveDoneTime = System.nanoTime();
-		if (verbose) {
-			logger.info("Runtime GIPS save: " + tickTockToElapsedSeconds(solutionApplicationDoneTime, gipsSaveDoneTime)
-					+ "s.");
-		}
+		gipsSaveMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "GIPS_SAVE", gipsSaveMeasurement);
+		logObserverMeasurement("GIPS_SAVE", verbose);
 
 		//
 		// Export
 		//
 
+		final SingleMeasurement exportMeasurement = new SingleMeasurement();
+		exportMeasurement.start();
+
 		if (verbose) {
 			logger.info("=> Start JSON export.");
 		}
 		exportToJson(gipsOutputPath, outputPath);
-		final long exportDoneTime = System.nanoTime();
-		if (verbose) {
-			logger.info("Runtime JSON export: " + tickTockToElapsedSeconds(gipsSaveDoneTime, exportDoneTime) + "s.");
-		}
+		exportMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "EXPORT", exportMeasurement);
+		logObserverMeasurement(callbackPath, verbose);
 
 		//
 		// The end
 		//
 
 		gipsApi.terminate();
-
-		if (verbose) {
-			logger.info("Runtime total: " + tickTockToElapsedSeconds(startTime, System.nanoTime()) + "s.");
-		}
+		totalMeasurement.stop();
+		Observer.getInstance().addMeasurement("Eval", "TOTAL", totalMeasurement);
+		logObserverMeasurement("TOTAL", verbose);
 	}
 
 }
