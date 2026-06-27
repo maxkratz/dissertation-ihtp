@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# This script can be used to run the GIPS-based, virtualized
+# This script can be used to run the GIPS-based, non-virtualized
 # IHTC/IHTP solution via tsp.
 #
 # @author Maximilian Kratz (maximilian.kratz@es.tu-darmstadt.de)
@@ -17,13 +17,9 @@ function setup {
     echo "# Script info: Applying GIPS XMI workarounds."
 
     # Extract XMI files
-    unzip -qq -o $JAR "ihtcvirtualgipssolution/hipe/*/hipe-network.xmi"
-    unzip -qq -o $JAR "ihtcvirtualgipssolution/api/*/gips-model.xmi"
-    unzip -qq -o $JAR "ihtcvirtualgipssolution/api/ibex-patterns.xmi"
-    unzip -qq -o $JAR "ihtcvirtualpreprocessing/hipe/*/hipe-network.xmi"
-    unzip -qq -o $JAR "ihtcvirtualpreprocessing/api/ibex-patterns.xmi"
-    unzip -qq -o $JAR "ihtcvirtualpostprocessing/hipe/*/hipe-network.xmi"
-    unzip -qq -o $JAR "ihtcvirtualpostprocessing/api/ibex-patterns.xmi"
+    unzip -qq -o $JAR "ihtcgipssolution/softcnstrtuning/hipe/*/hipe-network.xmi"
+    unzip -qq -o $JAR "ihtcgipssolution/softcnstrtuning/api/*/gips-model.xmi"
+    unzip -qq -o $JAR "ihtcgipssolution/softcnstrtuning/api/ibex-patterns.xmi"
 }
 
 function run_experiment {
@@ -52,10 +48,8 @@ function run_experiment {
 }
 
 function cleanup {
-    rm -r ./ihtcvirtualgipssolution
-    rm -r ./ihtcvirtualpreprocessing
-    rm -r ./ihtcvirtualpostprocessing
-    rm -r ../ihtcvirtualmetamodel
+    rm -r ./ihtcgipssolution
+    rm -r ../ihtcmetamodel
 }
 
 function run_wrap_all {
@@ -64,10 +58,10 @@ function run_wrap_all {
 
     # Actual run
     if [[ "$constraintCleanUp" = "u" ]]; then
-        export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --preprocessing $preprocessing --build_timelimit $buildTimeout"
+        export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --build_timelimit $buildTimeout"
     else
         echo "Disabling GIPS constraint clean-up."
-        export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --preprocessing $preprocessing --build_timelimit $buildTimeout -u"
+        export ARGS="-i $inputJson -o $outputJson --verbose --randomseed $randomSeed --callback $callback --parameter $parameter --build_timelimit $buildTimeout -u"
     fi
 
     echo "# Script info: Using ARGS: $ARGS"
@@ -87,8 +81,8 @@ source env.sh
 export JAR="gips-ihtc.jar"
 
 # Example arguments:
-# ./input i01.json ./output 0  ./callback.json ./parameter.json gt 3600 300 u
-# $1      $2       $3       $4 $5              $6               $7 $8   $9  $10
+# ./input i01.json ./output 0  ./callback.json ./parameter.json 3600 300 u
+# $1      $2       $3       $4 $5              $6               $7   $8  $9
 
 export inputFolder=$1
 export inputJsonName=$2
@@ -98,10 +92,9 @@ export outputJson="$outputFolder/${inputJsonName%.json}_solution.json"
 export randomSeed=$4
 export callback=$5
 export parameter=$6
-export preprocessing=$7
-export globalTimeout=$8
-export buildTimeout=$9
-export constraintCleanUp=${10}
+export globalTimeout=$7
+export buildTimeout=$8
+export constraintCleanUp=$9
 
 # Verify arguments
 if [ -z ${inputFolder+x} ]; then
@@ -126,10 +119,6 @@ if [ -z ${callback+x} ]; then
 fi
 if [ -z ${parameter+x} ]; then
     echo "Error: no parameter JSON path given. Exit."
-    exit 1;
-fi
-if [ -z ${preprocessing+x} ]; then
-    echo "Error: no preprocessing configuration given. Exit."
     exit 1;
 fi
 if [ -z ${globalTimeout+x} ]; then
