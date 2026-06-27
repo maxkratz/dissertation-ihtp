@@ -140,6 +140,7 @@ public class IhtcVirtualGipsHeadlessRunner {
 	 * <li>"v": verbose output flag (optional)</li>
 	 * <li>"n": random seed for the (M)ILP solver (optional)</li>
 	 * <li>"t": time limit for the (M)ILP solver (optional)</li>
+	 * <li>"b": time limit for the build process (optional)</li>
 	 * <li>"p": number of threads to use for the (M)ILP solver (optional)</li>
 	 * <li>"c": callback configuration path for Gurobi (optional)</li>
 	 * <li>"d": parameter path for Gurobi (optional)</li>
