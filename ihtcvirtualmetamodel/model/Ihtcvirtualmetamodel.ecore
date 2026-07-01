@@ -152,6 +152,14 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="unscheduledOptional" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="VirtualShiftToWorkload">
+    <eAnnotations source="virtualNode">
+      <details key="sourceClass" value="Shift"/>
+      <details key="targetClass" value="Workload"/>
+      <details key="sourceReference" value="shift"/>
+      <details key="targetReference" value="workload"/>
+      <details key="sourceEdgeReference" value="derivedWorkloads"/>
+      <details key="targetEdgeReference" value="derivedShift"/>
+    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="preselected" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="shift" eType="#//Shift"
         eOpposite="#//Shift/virtualWorkload"/>
@@ -166,6 +174,14 @@
         upperBound="-1" eType="#//VirtualWorkloadToCapacity" eOpposite="#//VirtualWorkloadToCapacity/enables_virtualShiftToWorkload"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="VirtualShiftToRoster">
+    <eAnnotations source="virtualNode">
+      <details key="sourceClass" value="Shift"/>
+      <details key="targetClass" value="Roster"/>
+      <details key="sourceReference" value="shift"/>
+      <details key="targetReference" value="roster"/>
+      <details key="sourceEdgeReference" value="derivedRoster"/>
+      <details key="targetEdgeReference" value="derivedShifts"/>
+    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EReference" name="shift" eType="#//Shift"
         eOpposite="#//Shift/virtualRoster"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="roster" eType="#//Roster"
@@ -173,6 +189,14 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="isSelected" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="VirtualWorkloadToOpTime">
+    <eAnnotations source="virtualNode">
+      <details key="sourceClass" value="Workload"/>
+      <details key="targetClass" value="OpTime"/>
+      <details key="sourceReference" value="workload"/>
+      <details key="targetReference" value="opTime"/>
+      <details key="sourceEdgeReference" value="derivedOpTimes"/>
+      <details key="targetEdgeReference" value="derivedWorkloads"/>
+    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EReference" name="workload" eType="#//Workload"
         eOpposite="#//Workload/virtualOpTime"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="opTime" eType="#//OpTime"
@@ -184,6 +208,14 @@
         upperBound="-1" eType="#//VirtualWorkloadToCapacity" eOpposite="#//VirtualWorkloadToCapacity/requires_virtualWorkloadToOpTime"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="VirtualOpTimeToCapacity">
+    <eAnnotations source="virtualNode">
+      <details key="sourceClass" value="OpTime"/>
+      <details key="targetClass" value="Capacity"/>
+      <details key="sourceReference" value="opTime"/>
+      <details key="targetReference" value="capacity"/>
+      <details key="sourceEdgeReference" value="derivedCapacities"/>
+      <details key="targetEdgeReference" value="derivedOpTimes"/>
+    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EReference" name="opTime" eType="#//OpTime"
         eOpposite="#//OpTime/virtualCapacity"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="capacity" eType="#//Capacity"
@@ -193,6 +225,14 @@
         upperBound="-1" eType="#//VirtualWorkloadToOpTime" eOpposite="#//VirtualWorkloadToOpTime/requires_virtualOpTimeToCapacity"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="VirtualWorkloadToCapacity">
+    <eAnnotations source="virtualNode">
+      <details key="sourceClass" value="Workload"/>
+      <details key="targetClass" value="Capacity"/>
+      <details key="sourceReference" value="workload"/>
+      <details key="targetReference" value="capacity"/>
+      <details key="sourceEdgeReference" value="derivedCapacity"/>
+      <details key="targetEdgeReference" value="derivedWorkloads"/>
+    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EReference" name="workload" eType="#//Workload"
         eOpposite="#//Workload/virtualCapacity"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="capacity" eType="#//Capacity"

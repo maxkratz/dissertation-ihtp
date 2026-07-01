@@ -1,0 +1,132 @@
+import "platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
+
+//
+// Remove objects of the type `VirtualShiftToWorkload`
+//
+rule virtualShiftToWorkload_to_derived {
+	-- v : VirtualShiftToWorkload {
+		---shift -> s
+		---workload -> w
+	}
+
+	s : Shift {
+		++ -derivedWorkloads -> w
+		-- -virtualWorkload -> v
+	}
+
+	w : Workload {
+		++ -derivedShift -> s
+		-- -virtualShift -> v
+	}
+	
+	# v.isSelected == true
+}
+rule removeVirtualShiftToWorkload {
+	-- v : VirtualShiftToWorkload
+	# v.isSelected == false
+}
+
+//
+// Remove objects of the type `VirtualShiftToRoster`
+//
+rule virtualShiftToRoster_to_derived {
+	-- v : VirtualShiftToRoster {
+		---shift -> s
+		---roster -> r
+	}
+
+	s : Shift {
+		++ -derivedRoster -> r
+		-- -virtualRoster -> v
+	}
+
+	r : Roster {
+		++ -derivedShifts -> s
+		-- -virtualShift -> v
+	}
+	
+	# v.isSelected == true
+}
+rule removeVirtualShiftToRoster {
+	-- v : VirtualShiftToRoster
+	# v.isSelected == false
+}
+
+//
+// Remove objects of the type `VirtualWorkloadToOpTime`
+//
+rule virtualWorkloadToOpTime_to_derived {
+	-- v : VirtualWorkloadToOpTime {
+		---workload -> w
+		---opTime -> o
+	}
+
+	w : Workload {
+		++ -derivedOpTimes -> o
+		-- -virtualOpTime -> v
+	}
+
+	o : OpTime {
+		++ -derivedWorkloads -> w
+		-- -virtualWorkload -> v
+	}
+	
+	# v.isSelected == true
+}
+rule removeVirtualWorkloadToOpTime {
+	-- v : VirtualWorkloadToOpTime
+	# v.isSelected == false
+}
+
+//
+// Remove objects of the type `VirtualOpTimeToCapacity`
+//
+rule virtualOpTimeToCapacity_to_derived {
+	-- v : VirtualOpTimeToCapacity {
+		---opTime -> o
+		---capacity -> c
+	}
+
+	o : OpTime {
+		++ -derivedCapacities -> c
+		-- -virtualCapacity -> v
+	}
+
+	c : Capacity {
+		++ -derivedOpTimes -> o
+		-- -virtualOpTime -> v
+	}
+	
+	# v.isSelected == true
+}
+rule removeVirtualOpTimeToCapacity {
+	-- v : VirtualOpTimeToCapacity
+	# v.isSelected == false
+}
+
+//
+// Remove objects of the type `VirtualWorkloadToCapacity`
+//
+rule virtualWorkloadToCapacity_to_derived {
+	-- v : VirtualWorkloadToCapacity {
+		---workload -> w
+		---capacity -> c
+	}
+
+	w : Workload {
+		++ -derivedCapacity -> c
+		-- -virtualCapacity -> v
+	}
+
+	c : Capacity {
+		++ -derivedWorkloads -> w
+		-- -virtualWorkload -> v
+	}
+	
+	# v.isSelected == true
+}
+rule removeVirtualWorkloadToCapacity {
+	-- v : VirtualWorkloadToCapacity
+	# v.isSelected == false
+}
+
