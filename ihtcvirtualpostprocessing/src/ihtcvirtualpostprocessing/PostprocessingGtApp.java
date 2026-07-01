@@ -11,6 +11,7 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.emoflon.ibex.gt.api.GraphTransformationPattern;
 import org.emoflon.ibex.gt.api.GraphTransformationRule;
 import org.emoflon.smartemf.persistence.SmartEMFResourceFactoryImpl;
 
@@ -106,17 +107,15 @@ public class PostprocessingGtApp extends IhtcvirtualpostprocessingHiPEApp {
 		final IhtcvirtualpostprocessingAPI api = this.initAPI();
 
 		// Apply all GT rule matches until the specified limit hits
-		// New GT rules (that should be applied) must be added here
-		applyMatches(api.virtualShiftToWorkload_to_derived(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.removeVirtualShiftToWorkload(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.virtualShiftToRoster_to_derived(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.removeVirtualShiftToRoster(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.virtualWorkloadToOpTime_to_derived(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.removeVirtualWorkloadToOpTime(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.virtualOpTimeToCapacity_to_derived(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.removeVirtualOpTimeToCapacity(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.virtualWorkloadToCapacity(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.removeVirtualWorkloadToCapacity(), GT_RULE_APPLICATION_LIMIT);
+		 for (var entry : api.getAllPatterns().entrySet()) {
+			 String ruleName = entry.getKey();
+		     GraphTransformationPattern<?, ?> pattern = entry.getValue().get();
+		        
+		     if (pattern instanceof GraphTransformationRule rule) {
+		    	 System.out.println("Applying rule: " + ruleName);
+		         applyMatches(rule, GT_RULE_APPLICATION_LIMIT);
+		     }
+		 }
 
 		// Persist model to XMI output path
 		try {
