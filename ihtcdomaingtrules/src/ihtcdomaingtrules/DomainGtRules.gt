@@ -1,0 +1,227 @@
+import "platform:/resource/ihtcdomainmetamodel/model/Ihtcdomainmetamodel.ecore"
+
+//
+// This GT rule set is only for specification purposes.
+// It cannot directly be executed by any means.
+//
+
+//
+// fixOperationDay
+//
+
+pattern findWorkloadToOpTime {
+	w : Workload {
+		- derivedOpTimes -> op
+	}
+	
+	op : OpTime {
+		- derivedWorkloads -> w
+	}
+}
+condition workloadOpTimeNotAssigned = forbid findWorkloadToOpTime
+
+rule fixOperationDay {
+	p : Patient {
+		- surgeon -> s
+		- firstWorkload -> w
+	}
+	
+	s : Surgeon {
+		- opTimes -> op
+	}
+	
+	w : Workload {
+		++ -derivedOpTimes -> op
+	}
+	
+	op : OpTime {
+		++ -derivedWorkloads -> w
+	}
+	
+	# p.earliestDay <= op.day
+	# op.day <= p.dueDay
+	# p.surgeryDuration <= op.maxOpTime
+}
+when workloadOpTimeNotAssigned
+
+//
+// fixOperationTheater
+//
+
+pattern findWorkloadToCapacity {
+	c : Capacity {
+		- derivedWorkloads -> w
+	}
+	
+	w : Workload {
+		- derivedCapacity -> c
+	}
+}
+condition workloadCapacityNotAssigned = forbid findWorkloadToCapacity
+
+rule fixOperationTheater {
+	p : Patient {
+		- surgeon -> s
+		- firstWorkload -> w
+	}
+	
+	s : Surgeon {
+		- opTimes -> op
+	}
+	
+	c : Capacity {
+		- derivedOpTimes -> op
+		++ - derivedWorkloads -> w
+	}
+	
+	w : Workload {
+		- derivedOpTimes -> op
+		++ - derivedCapacity -> c
+	}
+	
+	op : OpTime {
+		- derivedCapacities -> c
+		- derivedWorkloads -> w
+	}
+	
+	# p.surgeryDuration <= c.maxCapacity
+}
+when workloadCapacityNotAssigned
+
+//
+// assignPatientToRoom
+//
+
+pattern findIncompatibleRoom {
+	p : Patient {
+		- incompatibleRooms -> r
+	}
+	
+	r : Room
+}
+condition compatibleRoomForPatient = forbid findIncompatibleRoom
+
+pattern findShiftToWorkload {
+	w : Workload {
+		- derivedShift -> s
+	}
+	
+	s : Shift {
+		- derivedWorkloads -> w
+	}
+}
+condition workloadShiftNotAssigned = forbid findShiftToWorkload
+
+// Combine both conditions
+condition roomCompatibleAndWorkloadShiftNotAssigned = compatibleRoomForPatient && workloadShiftNotAssigned
+
+rule assignPatientToRoom {
+	p : Patient {
+		- firstWorkload -> w
+	}
+	
+	r : Room {
+		- shifts -> s
+	}
+	
+	w : Workload {
+		- derivedCapacity -> c
+		++ - derivedShift -> s
+	}
+	
+	s : Shift {
+		++ - derivedWorkloads -> w
+	}
+	
+	c : Capacity {
+		- derivedWorkloads -> w
+	}
+	
+	# s.shiftNo % 3 == 0
+	# s.shiftNo / 3 == c.day
+}
+when roomCompatibleAndWorkloadShiftNotAssigned
+
+//
+// extendPatientStay
+//
+
+pattern findShift2ToWorkload2 {
+	s2 : Shift {
+		- derivedWorkloads -> w2
+	}
+	
+	w2 : Workload {
+		- derivedShift -> s2
+	}
+}
+condition shift2Workload2NotAssigned = forbid findShift2ToWorkload2
+
+rule extendPatientStay {
+	s1 : Shift {
+		- next -> s2
+		- derivedWorkloads -> w1
+	}
+	
+	w1 : Workload {
+		- next -> w2
+		- derivedShift -> s1
+	}
+	
+	s2 : Shift {
+		// optional
+//		- prev -> s1
+		++ - derivedWorkloads -> w2
+	}
+	
+	w2 : Workload {
+		// optional
+//		- prev -> w1
+		++ - derivedShift -> s2
+	}
+	
+	// Workaround to express `w1.patient.isOccupant == false`
+	p : Patient {
+		- workloads -> w1
+		- workloads -> w2
+	}
+	
+	# p.isOccupant == false
+}
+when shift2Workload2NotAssigned
+
+//
+// assignNurseToRoom
+//
+
+pattern findShiftToRoster {
+	ro : Roster {
+		- derivedShifts -> s
+	}
+	
+	s : Shift {
+		- derivedRoster -> ro
+	}
+}
+condition shiftToRosterNotAssigned = forbid findShiftToRoster
+
+rule assignNurseToRoom {
+	n : Nurse {
+		- rosters -> ro
+	}
+
+	r : Room {
+		- shifts -> s
+	}
+	
+	ro : Roster {
+		++ - derivedShifts -> s
+	}
+	
+	s : Shift {
+		++ - derivedRoster -> ro
+	}
+	
+	# ro.shiftNo == s.shiftNo
+}
+when shiftToRosterNotAssigned

@@ -19,6 +19,7 @@ It was forked from the [gips-examples repository](https://github.com/Echtzeitsys
 
 | **Name**       | **Description**                                                                           |
 | -------------- | ----------------------------------------------------------------------------------------- |
+| `ihtcdomain*`  | Domain IHTP/IHTC metamodel and domain GT rules.                                           |
 | `ihtcvirtual*` | Virtualized GIPS projects for solving the IHTP/IHTC 2024 (competition).                   |
 | `ihtc*`        | Projects related to the (non-virtual) GIPS-based solution for the IHTC 2024 (competition) |
 
