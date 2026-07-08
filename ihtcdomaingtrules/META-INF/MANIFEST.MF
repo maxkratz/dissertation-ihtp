@@ -1,0 +1,21 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: ihtcdomaingtrules
+Bundle-ManifestVersion: 2
+Bundle-Name: ihtcdomaingtrules
+Bundle-Vendor: My Company
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: ihtcdomaingtrules; singleton:=true
+Bundle-ActivationPolicy: lazy
+Import-Package: org.apache.log4j,
+ org.apache.commons.logging
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Require-Bundle: org.emoflon.ibex.common,
+ org.emoflon.ibex.gt,
+ org.emoflon.ibex.patternmodel,
+ org.emoflon.ibex.gt.democles,
+ org.emoflon.ibex.gt.hipe,
+ ihtcdomainmetamodel;bundle-version="0.0.1"
+Export-Package: ihtcdomaingtrules.api,
+ ihtcdomaingtrules.api.matches,
+ ihtcdomaingtrules.api.rules
+
