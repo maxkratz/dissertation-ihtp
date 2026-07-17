@@ -1,6 +1,8 @@
 package ihtcvirtualpreprocessing;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
@@ -129,13 +131,37 @@ public class PreprocessingGtApp extends IhtcvirtualpreprocessingHiPEApp {
 		api.updateMatches();
 
 		// Apply all GT rule matches until the specified limit hits
-		for (var entry : api.getAllPatterns().entrySet()) {
-			final String ruleName = entry.getKey();
-			final GraphTransformationPattern<?, ?> pattern = entry.getValue().get();
-			if (pattern instanceof GraphTransformationRule rule) {
-				logger.info("Applying rule: " + ruleName);
-				applyMatches(rule, GT_RULE_APPLICATION_LIMIT);
+		final Map<String, GtRuleApplication> applicationStats = new HashMap<String, GtRuleApplication>();
+		int currentNumberOfApplications = 1;
+		while (currentNumberOfApplications > 0) {
+			currentNumberOfApplications = 0;
+			for (var entry : api.getAllPatterns().entrySet()) {
+				final String ruleName = entry.getKey();
+				final GraphTransformationPattern<?, ?> pattern = entry.getValue().get();
+				if (pattern instanceof GraphTransformationRule rule) {
+					logger.info("Applying rule: " + ruleName);
+					final GtRuleApplication stats = applyMatches(rule, GT_RULE_APPLICATION_LIMIT, 0);
+					currentNumberOfApplications += stats.getLastNumberOfAppliedMatches();
+
+					// Save stats increment to lookup structure
+					if (!applicationStats.containsKey(ruleName)) {
+						applicationStats.put(ruleName, stats);
+					} else {
+						applicationStats.get(ruleName).merge(stats);
+					}
+				}
 			}
+		}
+		logger.info(this.getClass().getSimpleName() + ": I finished applying GT rules.");
+
+		// Print statistics
+		for (final String name : applicationStats.keySet()) {
+			logger.info(this.getClass().getSimpleName() + ": Initial number of matches of GT rule " + name + " "
+					+ applicationStats.get(name).getInitialNumberOfMatches() + ".");
+			logger.info(this.getClass().getSimpleName() + ": I applied the GT rule " + name + " "
+					+ applicationStats.get(name).getNumberOfAppliedMatches() + " times.");
+			logger.info(this.getClass().getSimpleName() + ": Remaining number of matches of GT rule " + name + " "
+					+ applicationStats.get(name).getRemainingNumberOfMatches() + ".");
 		}
 
 		// Persist model to XMI path
@@ -193,27 +219,25 @@ public class PreprocessingGtApp extends IhtcvirtualpreprocessingHiPEApp {
 	 * Applies the given GT rule until it either does not have any more matches or
 	 * the global GT rule application limit was hit.
 	 * 
-	 * @param rule  GT rule to apply.
-	 * @param limit Maximum number of GT rule applications.
-	 * @param api
+	 * @param rule            GT rule to apply.
+	 * @param limit           Maximum number of GT rule applications.
+	 * @param previousApplied Number of previous GT rule applications.
+	 * @return Statistics of the applied matches.
 	 */
-	private void applyMatches(final GraphTransformationRule<?, ?> rule, final int limit) {
-		logger.info(this.getClass().getSimpleName() + ": Initial number of matches of GT rule " + rule.getPatternName()
-				+ " " + rule.countMatches() + ".");
+	private GtRuleApplication applyMatches(final GraphTransformationRule<?, ?> rule, final int limit,
+			final int previousApplied) {
+		final int inital = (int) rule.countMatches();
 		int counter = 0;
-		while (rule.isApplicable()) {
-			if (counter >= limit) {
-				logger.info(this.getClass().getSimpleName() + ": GT rule application limit of " + limit + " reached.");
+		// doUpdate = false to not run the PM on every pass of the loop
+		while (rule.isApplicable(false)) {
+			if (counter + previousApplied >= limit) {
 				break;
 			}
-			rule.apply();
+			// doUpdate = false to not run the PM on every pass of the loop
+			rule.apply(false);
 			counter++;
 		}
-
-		logger.info(this.getClass().getSimpleName() + ": I applied the GT rule " + rule.getPatternName() + " " + counter
-				+ " times.");
-		logger.info(this.getClass().getSimpleName() + ": Remaining number of matches of GT rule "
-				+ rule.getPatternName() + " " + rule.countMatches() + ".");
+		return new GtRuleApplication(inital, counter, (int) rule.countMatches());
 	}
 
 	/**
@@ -232,6 +256,47 @@ public class PreprocessingGtApp extends IhtcvirtualpreprocessingHiPEApp {
 		rs.getPackageRegistry().put(IhtcvirtualmetamodelPackage.eNS_URI, IhtcvirtualmetamodelPackage.eINSTANCE);
 		final Resource model = rs.getResource(URI.createFileURI(path), true);
 		return (Root) model.getContents().get(0);
+	}
+
+	public class GtRuleApplication {
+		int initialNumberOfMatches = 0;
+		int numberOfAppliedMatches = 0;
+		int remainingNumberOfMatches = 0;
+
+		int lastNumberOfAppliedMatches = 0;
+
+		public GtRuleApplication(final int initial, final int applications, int remaining) {
+			this.initialNumberOfMatches = initial;
+			this.numberOfAppliedMatches = applications;
+			this.remainingNumberOfMatches = remaining;
+			this.lastNumberOfAppliedMatches = applications;
+		}
+
+		public void merge(final GtRuleApplication other) {
+			// Do not overwrite initial number of matches
+			// Increment number of applied matches
+			this.numberOfAppliedMatches += other.getNumberOfAppliedMatches();
+			// Overwrite remaining number of matches
+			this.remainingNumberOfMatches = other.getRemainingNumberOfMatches();
+			// Save last number of applied matches
+			this.lastNumberOfAppliedMatches = other.getNumberOfAppliedMatches();
+		}
+
+		public int getInitialNumberOfMatches() {
+			return this.initialNumberOfMatches;
+		}
+
+		public int getNumberOfAppliedMatches() {
+			return this.numberOfAppliedMatches;
+		}
+
+		public int getRemainingNumberOfMatches() {
+			return this.remainingNumberOfMatches;
+		}
+
+		public int getLastNumberOfAppliedMatches() {
+			return this.lastNumberOfAppliedMatches;
+		}
 	}
 
 }
