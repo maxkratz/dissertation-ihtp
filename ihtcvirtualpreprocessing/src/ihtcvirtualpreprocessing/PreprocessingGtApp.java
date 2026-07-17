@@ -11,6 +11,7 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.emoflon.ibex.gt.api.GraphTransformationPattern;
 import org.emoflon.ibex.gt.api.GraphTransformationRule;
 import org.emoflon.smartemf.persistence.SmartEMFResourceFactoryImpl;
 
@@ -124,16 +125,18 @@ public class PreprocessingGtApp extends IhtcvirtualpreprocessingHiPEApp {
 				"./ihtcvirtualpreprocessing/api/ibex-patterns.xmi" //
 		);
 
+		// Update matches
+		api.updateMatches();
+
 		// Apply all GT rule matches until the specified limit hits
-		// New GT rules (that should be applied) must be added here
-		applyMatches(api.preprocessOccupantsFirstWorkload(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.preprocessOccupantsWorkload(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.assignNurseToRoom(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.assignSurgeonToOT(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.fixOperationDayOpTime(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.fixOperationDayCapacity(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.assignPatientToRoom(), GT_RULE_APPLICATION_LIMIT);
-		applyMatches(api.extendPatientStay(), GT_RULE_APPLICATION_LIMIT);
+		for (var entry : api.getAllPatterns().entrySet()) {
+			final String ruleName = entry.getKey();
+			final GraphTransformationPattern<?, ?> pattern = entry.getValue().get();
+			if (pattern instanceof GraphTransformationRule rule) {
+				logger.info("Applying rule: " + ruleName);
+				applyMatches(rule, GT_RULE_APPLICATION_LIMIT);
+			}
+		}
 
 		// Persist model to XMI path
 		try {
