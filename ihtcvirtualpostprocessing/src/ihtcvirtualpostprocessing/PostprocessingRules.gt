@@ -2,13 +2,17 @@ import
 	"platform:/resource/ihtcvirtualmetamodel/model/Ihtcvirtualmetamodel.ecore"
 
 //
+// GT rules for the post-processing of a (virtual) model
+//
+
+//
 // Remove objects of the type `VirtualShiftToWorkload`
 //
 
 rule virtualShiftToWorkload_to_derived {
 	-- v : VirtualShiftToWorkload {
-		---shift -> s
-		---workload -> w
+		-- -shift -> s
+		-- -workload -> w
 	}
 
 	s : Shift {
@@ -36,8 +40,8 @@ rule removeVirtualShiftToWorkload {
 
 rule virtualShiftToRoster_to_derived {
 	-- v : VirtualShiftToRoster {
-		---shift -> s
-		---roster -> r
+		-- -shift -> s
+		-- -roster -> r
 	}
 
 	s : Shift {
@@ -65,8 +69,8 @@ rule removeVirtualShiftToRoster {
 
 rule virtualWorkloadToOpTime_to_derived {
 	-- v : VirtualWorkloadToOpTime {
-		---workload -> w
-		---opTime -> op
+		-- -workload -> w
+		-- -opTime -> op
 	}
 
 	w : Workload {
@@ -94,8 +98,8 @@ rule removeVirtualWorkloadToOpTime {
 
 rule virtualOpTimeToCapacity_to_derived {
 	-- v : VirtualOpTimeToCapacity {
-		---capacity -> c
-		---opTime -> op
+		-- -capacity -> c
+		-- -opTime -> op
 	}
 
 	op : OpTime {
@@ -123,8 +127,8 @@ rule removeVirtualOpTimeToCapacity {
 
 rule virtualWorkloadToCapacity {
 	-- v : VirtualWorkloadToCapacity {
-		---capacity -> c
-		---workload -> w
+		-- -capacity -> c
+		-- -workload -> w
 	}
 
 	w : Workload {
