@@ -232,13 +232,17 @@ mapping openOTOnDay to dayOperatingTheaterTuple;
 // This constraints sets the respective `openedOTOnDAy` mapping to 1 if and
 // only if at least one operation takes place in `relatedOT` on day `d`.
 constraint with openOTOnDay {
-	mappings.assignedSurgeryToPatient->join((d, d), (relatedOT, relatedOT))
-		->sum(element.value)
+	mappings.assignedSurgeryToPatient->filter( //
+		context.nodes.d == element.nodes.d //
+		& context.nodes.relatedOT == element.nodes.relatedOT //
+	)->sum(element.value)
 	<=
 	1000 * context.value
 	&
-	mappings.assignedSurgeryToPatient->join((d, d), (relatedOT, relatedOT))
-		->sum(element.value)
+	mappings.assignedSurgeryToPatient->filter( //
+		context.nodes.d == element.nodes.d //
+		& context.nodes.relatedOT == element.nodes.relatedOT //
+	)->sum(element.value)
 	>=
 	context.value
 }
@@ -246,22 +250,30 @@ constraint with openOTOnDay {
 // This constraint sets the respective `genderIsInRoomOnDay` mapping to 1
 // if and only if the gender `g` is present in room `r` on day `d`.
 constraint with genderIsInRoomOnDay {
-	mappings.patientIsInRoomOnDay->join((d, d), (r, r))->filter( //
-		element.nodes.p.gender == context.nodes.g.name //
+	mappings.patientIsInRoomOnDay->filter( //
+		element.nodes.d == context.nodes.d //
+		& element.nodes.r == context.nodes.r //
+		& element.nodes.p.gender == context.nodes.g.name //
 	)->sum(element.value)
 	+
-	patterns.occupantIsInRoomOnDay->join((d, d), (r, r))->filter( //
-		element.nodes.o.gender == context.nodes.g.name //
+	patterns.occupantIsInRoomOnDay->filter( //
+		element.nodes.d == context.nodes.d //
+		& element.nodes.r == context.nodes.r //
+		& element.nodes.o.gender == context.nodes.g.name //
 	)->sum(1)
 	<=
 	1000 * context.value
 	&
-	mappings.patientIsInRoomOnDay->join((d, d), (r, r))->filter( //
-		element.nodes.p.gender == context.nodes.g.name //
+	mappings.patientIsInRoomOnDay->filter( //
+		element.nodes.d == context.nodes.d //
+		& element.nodes.r == context.nodes.r //
+		& element.nodes.p.gender == context.nodes.g.name //
 	)->sum(element.value)
 	+
-	patterns.occupantIsInRoomOnDay->join((d, d), (r, r))->filter( //
-		element.nodes.o.gender == context.nodes.g.name //
+	patterns.occupantIsInRoomOnDay->filter( //
+		element.nodes.d == context.nodes.d //
+		& element.nodes.r == context.nodes.r //
+		& element.nodes.o.gender == context.nodes.g.name //
 	)->sum(1)
 	>=
 	context.value
@@ -324,9 +336,10 @@ constraint with patientsInRoomOnDay {
 //
 // Translation: at most one gender must be present in a room `r` on day `d`.
 constraint with dayRoomTuple {
-	mappings.genderIsInRoomOnDay->join((r, r), (d, d))->sum(element.value)
-	<=
-	1
+	mappings.genderIsInRoomOnDay->filter( //
+		context.nodes.r == element.nodes.r //
+		& context.nodes.d == element.nodes.d //
+	)->sum(element.value) <= 1
 }
 
 // H7: Room capacity: The number of patients in each room in each day cannot
