@@ -171,34 +171,6 @@ pattern roomDayTuple {
 	d : Day
 }
 
-// Used in a mapping to calculate which nurse is assigned to which workload.
-pattern nurseToWorkload {
-	vsr : VirtualShiftToRoster {
-		- shift -> s
-		- roster -> ro
-	}
-
-	ro : Roster {
-		- nurse -> n
-	}
-
-	n : Nurse
-
-	s : Shift {
-		- virtualWorkload -> vsw
-	}
-
-	vsw : VirtualShiftToWorkload {
-		- workload -> w
-	}
-
-	w : Workload {
-		- patient -> p
-	}
-
-	p : Patient
-}
-
 //
 // GIPSL
 //
@@ -261,9 +233,6 @@ mapping ageGroupsInRoom to ageGroupsRoomDay {
 	// True if the patient of the current match has the smallest age group in that room.
 	var noSmallerAgeGroup : EBoolean
 };
-
-// mapping that holds the information what workloads a roster is responsible for / assigned to.
-mapping assignedNursesToWorkload to nurseToWorkload;
 
 //
 // Hard Constraints
@@ -446,19 +415,6 @@ constraint with findExtendingShiftToWorkload {
 //
 // Utility constraints needed in multiple places
 //
-
-// U13: Sets the mapping to true if the nurse is assigned to the workload.
-// Used as primary mapping for the information which nurses are assigned to which workloads of patients.
-// Needed for constraints: U14+U15(S4), U16(S3).
-constraint with assignedNursesToWorkload {
-	context.value == 1
-	<==>
-	[
-		context.nodes.vsw.variables.isSelected == 1
-		&
-		context.nodes.vsr.variables.isSelected == 1
-	]
-}
 
 // U2: counts how many patients are currently assigned to each room.
 // Needed for constraints: H7, H8.
