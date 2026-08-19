@@ -219,9 +219,6 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 			totalVars += logVarStats(gipsApi.getSurgeonInOT());
 			totalVars += logVarStats(gipsApi.getSurgeonPenalizedOTs());
 			totalVars += logVarStats(gipsApi.getAgeGroupsInRoom());
-			totalVars += logVarStats(gipsApi.getAssignedNursesToWorkload());
-			totalVars += logVarStats(gipsApi.getNurseWorkloadForDay());
-			totalVars += logVarStats(gipsApi.getAssignedNurseForPatient());
 
 			logger.info("Total estimated number of variables: " + totalVars);
 		}
