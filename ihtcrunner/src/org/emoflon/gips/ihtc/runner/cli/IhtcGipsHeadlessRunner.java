@@ -61,7 +61,6 @@ public class IhtcGipsHeadlessRunner {
 		logger.info("Using CLI config: " + config.toString());
 
 		// Create a new IHTC GIPS runner
-		Observer.getInstance().setCurrentSeries("Eval");
 		logger.info("=> Using the SOFT-CNSTR-TUNING implementation.");
 		final IhtcSoftCnstrTuningGipsRunner runner = new IhtcSoftCnstrTuningGipsRunner();
 
