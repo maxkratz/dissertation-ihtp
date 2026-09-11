@@ -7,7 +7,6 @@ import java.util.Objects;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.emoflon.gips.core.GipsMapper;
 import org.emoflon.gips.core.util.Observer;
-import org.emoflon.gips.core.util.SingleMeasurement;
 import org.emoflon.gips.ihtc.virtual.runner.utils.FileUtils;
 import org.emoflon.gips.ihtc.virtual.runner.utils.XmiSetupUtil;
 
@@ -116,181 +115,147 @@ public class IhtcVirtualGipsRunner extends AbstractIhtcVirtualGipsRunner {
 	@Override
 	public void run() {
 		checkIfFileExists(inputPath);
-		Observer.getInstance().setCurrentSeries("Eval");
-		final SingleMeasurement totalMeasurement = new SingleMeasurement();
-		totalMeasurement.start();
+		final Observer observer = new Observer();
+		observer.singleMeasurement("Eval", "TOTAL", () -> {
+			//
+			// Convert JSON input file to XMI file
+			//
 
-		//
-		// Convert JSON input file to XMI file
-		//
-
-		final SingleMeasurement loadMeasurement = new SingleMeasurement();
-		loadMeasurement.start();
-
-		if (verbose) {
-			logger.info("=> Start JSON model loader.");
-		}
-
-		transformJsonToModel(inputPath, instancePath);
-		loadMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "LOAD_MODEL", loadMeasurement);
-		logObserverMeasurement("LOAD_MODEL", verbose);
-
-		//
-		// Pre-processing via a separated GT rule set
-		//
-
-		final SingleMeasurement preprocMeasurement = new SingleMeasurement();
-		preprocMeasurement.start();
-
-		if (verbose) {
-			logger.info("=> Start pre-processing.");
-		}
-
-		if (preProcNoGt) {
-			preprocessNoGt(instancePath, preprocessingPath);
-		} else {
-			preprocess(instancePath, preprocessingPath);
-		}
-		preprocMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "PREPROC", preprocMeasurement);
-		logObserverMeasurement("PREPROC", verbose);
-
-		//
-		// Initialize GIPS API
-		//
-
-		final SingleMeasurement initMeasurement = new SingleMeasurement();
-		initMeasurement.start();
-
-		if (verbose) {
-			logger.info("=> Start GIPS init.");
-		}
-
-		final IhtcvirtualgipssolutionGipsAPI gipsApi = new IhtcvirtualgipssolutionGipsAPI();
-		XmiSetupUtil.checkIfEclipseOrJarSetup(gipsApi, preprocessingPath);
-		initMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "INIT_GIPS", initMeasurement);
-		logObserverMeasurement("INIT_GIPS", verbose);
-
-		// Set GIPS configuration parameters from this object
-		setGipsConfig(gipsApi);
-
-		//
-		// Run GIPS solution
-		//
-
-		buildAndSolve(gipsApi, verbose, buildTimeLimit);
-
-		//
-		// Apply solution
-		//
-
-		final SingleMeasurement solutionApplicationMeasurement = new SingleMeasurement();
-		solutionApplicationMeasurement.start();
-
-		if (applicationNoGt) {
-			applySolutionNoGt(gipsApi, verbose);
-		} else {
-			applySolution(gipsApi, verbose);
-		}
-
-		solutionApplicationMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "SOLUTION_APPLICATION", solutionApplicationMeasurement);
-		logObserverMeasurement("SOLUTION_APPLICATION", verbose);
-
-		// Print variable statistics for all mappers
-		if (verbose) {
-			logger.info("=> Print variable statistics (estimation): ");
-			int totalVars = 0;
-
-			// GT rule-based mappings
-			totalVars += logVarStats(gipsApi.getSelectedShiftToFirstWorkload());
-			totalVars += logVarStats(gipsApi.getSelectedExtendingShiftToWorkload());
-			totalVars += logVarStats(gipsApi.getSelectedOccupantNodes());
-			totalVars += logVarStats(gipsApi.getSelectedOperationDay());
-			totalVars += logVarStats(gipsApi.getSelectedShiftToRoster());
-
-			// utility mappings
-			totalVars += logVarStats(gipsApi.getCountPatientsForRoom());
-			totalVars += logVarStats(gipsApi.getAssignedPatientsToRoom());
-			totalVars += logVarStats(gipsApi.getAssignedGenderToRoomOnShift());
-			totalVars += logVarStats(gipsApi.getOpenOTs());
-			totalVars += logVarStats(gipsApi.getSurgeonInOT());
-			totalVars += logVarStats(gipsApi.getSurgeonPenalizedOTs());
-			totalVars += logVarStats(gipsApi.getAgeGroupsInRoom());
-
-			logger.info("Total estimated number of variables: " + totalVars);
-		}
-
-		//
-		// GIPS save
-		//
-
-		final SingleMeasurement gipsSaveMeasurement = new SingleMeasurement();
-		gipsSaveMeasurement.start();
-
-		gipsSave(gipsApi, gipsOutputPath);
-		gipsSaveMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "GIPS_SAVE", gipsSaveMeasurement);
-		logObserverMeasurement("GIPS_SAVE", verbose);
-
-		//
-		// Model Validation
-		//
-
-		final SingleMeasurement modelValidateMeasurement = new SingleMeasurement();
-		modelValidateMeasurement.start();
-
-		if (verbose) {
-			logger.info("=> Start Model Validation");
-		}
-
-		validateModel(gipsOutputPath);
-		modelValidateMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "MODEL_VALIDATE", modelValidateMeasurement);
-		logObserverMeasurement("MODEL_VALIDATE", verbose);
-
-		//
-		// Export
-		//
-
-		final SingleMeasurement exportMeasurement = new SingleMeasurement();
-		exportMeasurement.start();
-
-		if (verbose) {
-			logger.info("=> Start JSON export.");
-		}
-
-		if (postProc) {
-			final SingleMeasurement postProcMeasurement = new SingleMeasurement();
-			postProcMeasurement.start();
 			if (verbose) {
-				logger.info("=> Start post-processing GT.");
+				logger.info("=> Start JSON model loader.");
 			}
-			postprocess(gipsOutputPath, postProcOutputPath);
-			postProcMeasurement.stop();
-			Observer.getInstance().addMeasurement("Eval", "POSTPROC", postProcMeasurement);
-			logObserverMeasurement("POSTPROC", verbose);
-			exportToJson(postProcOutputPath, outputPath);
-		} else {
+
+			observer.singleMeasurement("Eval", "LOAD_MODEL", () -> {
+				transformJsonToModel(inputPath, instancePath);
+			});
+			logObserverMeasurement("LOAD_MODEL", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// Pre-processing via a separated GT rule set
+			//
+
 			if (verbose) {
-				logger.info("=> Skipped post-processing GT.");
+				logger.info("=> Start pre-processing.");
 			}
-			exportToJsonNoPostProc(gipsOutputPath, outputPath);
-		}
-		exportMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "EXPORT", exportMeasurement);
-		logObserverMeasurement("EXPORT", verbose);
 
-		//
-		// The end
-		//
+			observer.singleMeasurement("Eval", "PREPROC", () -> {
+				if (preProcNoGt) {
+					preprocessNoGt(instancePath, preprocessingPath);
+				} else {
+					preprocess(instancePath, preprocessingPath);
+				}
+			});
+			logObserverMeasurement("PREPROC", verbose, observer.getStageMeasurements("Eval"));
 
-		gipsApi.terminate();
-		totalMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "TOTAL", totalMeasurement);
-		logObserverMeasurement("TOTAL", verbose);
+			//
+			// Initialize GIPS API
+			//
+
+			if (verbose) {
+				logger.info("=> Start GIPS init.");
+			}
+
+			final IhtcvirtualgipssolutionGipsAPI gipsApi = observer.singleMeasurement("Eval", "INIT_GIPS", () -> {
+				final IhtcvirtualgipssolutionGipsAPI api = new IhtcvirtualgipssolutionGipsAPI();
+				XmiSetupUtil.checkIfEclipseOrJarSetup(api, preprocessingPath);
+				return api;
+			});
+			logObserverMeasurement("INIT_GIPS", verbose, observer.getStageMeasurements("Eval"));
+
+			// Set GIPS configuration parameters from this object
+			setGipsConfig(gipsApi);
+
+			//
+			// Run GIPS solution
+			//
+
+			buildAndSolve(gipsApi, verbose, buildTimeLimit);
+
+			//
+			// Apply solution
+			//
+
+			observer.singleMeasurement("Eval", "SOLUTION_APPLICATION", () -> {
+				if (applicationNoGt) {
+					applySolutionNoGt(gipsApi, verbose);
+				} else {
+					applySolution(gipsApi, verbose);
+				}
+			});
+			logObserverMeasurement("SOLUTION_APPLICATION", verbose, observer.getStageMeasurements("Eval"));
+
+			// Print variable statistics for all mappers
+			if (verbose) {
+				logger.info("=> Print variable statistics (estimation): ");
+				int totalVars = 0;
+
+				// GT rule-based mappings
+				totalVars += logVarStats(gipsApi.getSelectedOperationDay());
+
+				// utility mappings
+				totalVars += logVarStats(gipsApi.getCountPatientsForRoom());
+				totalVars += logVarStats(gipsApi.getAssignedGenderToRoomOnShift());
+				totalVars += logVarStats(gipsApi.getOpenOTs());
+
+				logger.info("Total estimated number of variables: " + totalVars);
+			}
+
+			//
+			// GIPS save
+			//
+
+			observer.singleMeasurement("Eval", "GIPS_SAVE", () -> {
+				gipsSave(gipsApi, gipsOutputPath);
+			});
+			logObserverMeasurement("GIPS_SAVE", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// Model Validation
+			//
+
+			if (verbose) {
+				logger.info("=> Start Model Validation");
+			}
+
+			observer.singleMeasurement("Eval", "MODEL_VALIDATE", () -> {
+				validateModel(gipsOutputPath);
+			});
+			logObserverMeasurement("MODEL_VALIDATE", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// Export
+			//
+
+			if (verbose) {
+				logger.info("=> Start JSON export.");
+			}
+
+			observer.singleMeasurement("Eval", "EXPORT", () -> {
+				if (postProc) {
+					observer.singleMeasurement("Eval", "POSTPROC", () -> {
+						if (verbose) {
+							logger.info("=> Start post-processing GT.");
+						}
+						postprocess(gipsOutputPath, postProcOutputPath);
+					});
+					logObserverMeasurement("POSTPROC", verbose, observer.getStageMeasurements("Eval"));
+					exportToJson(postProcOutputPath, outputPath);
+				} else {
+					if (verbose) {
+						logger.info("=> Skipped post-processing GT.");
+					}
+					exportToJsonNoPostProc(gipsOutputPath, outputPath);
+				}
+			});
+			logObserverMeasurement("EXPORT", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// The end
+			//
+
+			gipsApi.terminate();
+		});
+		logObserverMeasurement("TOTAL", verbose, observer.getStageMeasurements("Eval"));
 	}
 
 	/**
