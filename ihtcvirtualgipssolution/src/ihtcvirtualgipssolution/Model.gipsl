@@ -36,8 +36,8 @@ pattern findVirtualNodesForOccupant {
 
 // SCP.1-3: Rule that selects an operation day for a patient.
 // That includes three edges to be adopted in the final model.
-// I. + II.: between the patient and opTime and between patient and capacity -> Selects a day and OT for the patient.
-// III.: between opTime and Capacity to make sure the predefined surgeon of the patient is working in the correct OT on that day.
+// I. + II.: between the Patient and OpTime and between Patient and Capacity -> Selects a day and OT for the patient.
+// III.: between OpTime and Capacity to make sure the predefined surgeon of the patient is working in the correct OT on that day.
 rule selectOperationDay {
 	p : Patient {
 		- firstWorkload -> w
@@ -82,7 +82,7 @@ rule selectOperationDay {
 }
 
 //
-// Utility Patterns used in Constraints
+// Utility patterns used in constraints
 //
 
 // Pattern to find all mandatory patients.
@@ -100,7 +100,7 @@ pattern optionalPatients {
 }
 
 // Pattern used to map which rooms are occupied on a specific shift.
-// Used for a mapping which counts the Patients over a specific room for a specific day -> enforce that the capacity of a room is not exceeded.
+// Used for a mapping which counts the patients over a specific room for a specific day -> enforce that the capacity of a room is not exceeded.
 // Additionally used to make sure nurses are not assigned to empty rooms and each non-empty room has an assigned nurse.
 pattern roomForShift {
 	r : Room {
@@ -111,8 +111,8 @@ pattern roomForShift {
 	# s.shiftNo % 3 == 0
 }
 
-// Pattern used in a mapping to save the information if an OT is used on a specific Day and used to make sure the Capacity of an OT is not exceeded on each day.
-// c.maxCapacity > 0 is already enforced by the preprocessing because Capacity Objects with maxCapacity <= 0 are not created.
+// Pattern used in a mapping to save the information if an OT is used on a specific day and used to make sure the capacity of an OT is not exceeded on each day.
+// `c.maxCapacity > 0` is already enforced by the preprocessing because Capacity objects with `maxCapacity <= 0` are not created.
 pattern capacityOTTuple {
 	relatedOT : OT {
 		- capacities -> c
@@ -122,8 +122,8 @@ pattern capacityOTTuple {
 //	# c.maxCapacity > 0
 }
 
-// Pattern used in a mapping to save the information if a Surgeon operates on a specific Day and used to make sure the operation time of a surgeon is not exceeded on each day.
-// op.maxOpTime > 0 is already enforced by the preprocessing because OpTime Objects with maxOpTime <= 0 are not created.
+// Pattern used in a mapping to save the information if a Surgeon operates on a specific day and used to make sure the operation time of a surgeon is not exceeded on each day.
+// `op.maxOpTime > 0` is already enforced by the preprocessing because OpTime objects with `maxOpTime <= 0` are not created.
 pattern surgeonOpTimeTuple {
 	s : Surgeon {
 		- opTimes -> op
@@ -157,15 +157,15 @@ pattern surgeonOTForDay {
 	inOT : OT
 }
 
-// Pattern used for a Mapping to calculate what age groups are present in a specific room for all shifts.
-// Additionally the highest and lowest age groups are also saved in variables.
+// Pattern used for a mapping to calculate what age groups are present in a specific room for all shifts.
+// Additionally, the highest and lowest age groups are also saved in variables.
 pattern ageGroupsRoomDay {
 	r : Room
 	d : Day
 	ag : AgeGroup
 }
 
-// Used in Softconstraint S1 to check the assigned age groups for each room on each day.
+// Used in soft constraint S1 to check the assigned age groups for each room on each day.
 pattern roomDayTuple {
 	r : Room
 	d : Day
@@ -176,7 +176,7 @@ pattern roomDayTuple {
 //
 
 //
-// Rule Mappings
+// Rule mappings
 //
 
 // SCP.1-3: Decides on what day and in which OT a patient is operated on.
@@ -196,7 +196,7 @@ type VirtualShiftToRoster {
 };
 
 //
-// Utility Mappings
+// Utility mappings
 //
 
 // Mapping that holds the information how many patients are assigned to a room on a specific day.
@@ -214,16 +214,16 @@ mapping openOTs to capacityOTTuple;
 // Mapping that holds the information if a surgeon operates in a specific OT on a specific day.
 mapping surgeonInOT to surgeonOTForDay;
 
-// mapping that counts how many OTs a surgeon is assigned to on a specific day.
+// Mapping that counts how many OTs a surgeon is assigned to on a specific day.
 // penalizedOTs: A penalty is applied if a surgeon has more than 1 assigned OT per day. Maximum of 0 and
 // amount of OTs a surgeon is operating in on a specific day -1.
 mapping surgeonPenalizedOTs to surgeonOpTimeTuple {
 	var penalizedOTs : EInt
 };
 
-// mapping that holds the information if an age group is present in a room on a specific day.
-// maxAgeGroup: True if the patient of the current Match has the highest age group in that room.
-// minAgeGroup: True if the patient of the current Match has the smallest age group in that room.
+// Mapping that holds the information if an age group is present in a room on a specific day.
+// maxAgeGroup: True if the patient of the current match has the highest age group in that room.
+// minAgeGroup: True if the patient of the current match has the smallest age group in that room.
 // noSmallerAgeGroup: True if there is no smaller age group in this constellation.
 // noGreaterAgeGroup: True if there is no greater age group in this constellation.
 mapping ageGroupsInRoom to ageGroupsRoomDay {
@@ -236,16 +236,16 @@ mapping ageGroupsInRoom to ageGroupsRoomDay {
 };
 
 //
-// Hard Constraints
+// Hard constraints
 //
 
 // H1: No gender mix: Patients of different genders may not share a room on any day.
-// patient.gender is a string variable and the preallocation is assumably not known. -> There can only be the same value for all patients.
+// `patient.gender` is a string variable and the preallocation is not known. -> There can only be the same value for all patients.
 constraint with roomForShift {
 	mappings.assignedGenderToRoomOnShift->join((s, s))->sum(element.value) <= 1
 }
 
-// Utility Constraint U3: saves the information if a gender is assigned to a room on a specific day.
+// Utility constraint U3: Saves the information if a gender is assigned to a room on a specific day.
 constraint with assignedGenderToRoomOnShift {
 	types.VirtualShiftToWorkload->join((shift,s))->filter(element.workload.patient.gender == context.nodes.g.name)->sum(element.variables.isSelected) >= 1
 	<==>
@@ -255,7 +255,7 @@ constraint with assignedGenderToRoomOnShift {
 /* --------------------------------------------------------------------------------------------------------------------- */
 
 // H2: Compatible rooms: Patients can only be assigned to one of their compatible rooms.
-// -> Already enforced by GT-Rule "assignPatientToRoom" in preprocessing.
+// -> Already enforced by GT rule "assignPatientToRoom" in preprocessing.
 
 /* --------------------------------------------------------------------------------------------------------------------- */
 
@@ -289,13 +289,13 @@ constraint with mandatoryPatients {
 /* --------------------------------------------------------------------------------------------------------------------- */
 
 // H6: Admission day: A patient can be admitted on any day from their release date to their due date.
-// -> Already enforced by GT-Rule "fixOperationday".
+// -> Already enforced by GT rule "fixOperationday".
 
 /* --------------------------------------------------------------------------------------------------------------------- */
 
 // H7 Room capacity: The number of patients in each room in each day cannot exceed the
 // capacity of the room.
-// The calculated amount of Patients assigned to each room on each morning shift of a day has to be
+// The calculated amount of patients assigned to each room on each morning shift of a day has to be
 // smaller or equal to the amount of available beds.
 
 constraint with countPatientsForRoom {
@@ -339,11 +339,11 @@ constraint with countPatientsForRoom {
 
 
 //
-// Other Constraints
+// Other constraints
 //
 
 // C1: A patient is assigned to the same room during all shifts.
-// -> Already enforced by GT-Rule "extendPatientStay" in preprocessing.
+// -> Already enforced by GT rule "extendPatientStay" in preprocessing.
 
 // R1: A patient is assigned to at most one room in each shift.
 // -> Already implemented in constraint V3 in context with C9.
@@ -354,7 +354,7 @@ constraint with Patient {
 }
 
 // C2: A surgeon without any operations on a specific day is not assigned an operating theater on that day.
-// -> Already given, because the rule selectOperationDay only assigns a surgeon to an OT if he has a scheduled
+// -> Already given, because the rule "selectOperationDay" only assigns a surgeon to an OT if he has a scheduled
 // operation with a patient on that day.
 
 // C3: The day the first workload of a patient gets scheduled has to be the same day the patient has surgery.
@@ -369,16 +369,16 @@ constraint with Patient {
 }
 
 //
-// Virtual Constraints
+// Virtual constraints
 //
 
-// V1: All virtual nodes of occupants are selected
+// V1: All virtual nodes of occupants are selected.
 constraint with findVirtualNodesForOccupant {
 	context.nodes.vsw.variables.isSelected == 1
 }
 
-// V2.1: The virtual Node "VirtualWorkloadToShift" can only be added to the final model if
-// the required Node "VirtualWorkloadToCapacity" is also selected (isSelected = true).
+// V2.1: The virtual node "VirtualWorkloadToShift" can only be added to the final model if
+// the required node "VirtualWorkloadToCapacity" is also selected (isSelected = true).
 pattern firstVsw {
 	p : Patient {
 		- firstWorkload -> w
@@ -398,15 +398,15 @@ constraint with firstVsw {
 	mappings.selectedOperationDay->join((w, w))->sum(element.value) == 1
 }
 
-// V2.2:  The virtual Node "VirtualWorkloadToCapacity" can only be added to the final model if
-// the the corresponding patient is also assigned to a room
+// V2.2: The virtual node "VirtualWorkloadToCapacity" can only be added to the final model if
+// the the corresponding patient is also assigned to a room.
 constraint with selectedOperationDay {
 	context.value == 1
 	==>
 	types.VirtualShiftToWorkload->join((workload, w))->filter(element.shift.shiftNo / 3 == context.nodes.c.day)->sum(element.variables.isSelected) == 1
 }
 
-// V3: The stay of a patient can be extended by selecting a following Node "VirtualWorkloadToShift"
+// V3: The stay of a patient can be extended by selecting a following node "VirtualWorkloadToShift"
 // that is connected to the previous links between the patients workloads to shifts.
 // The following node can only be selected if the previous is already set to true.
 constraint with findExtendingShiftToWorkload {
@@ -417,7 +417,7 @@ constraint with findExtendingShiftToWorkload {
 // Utility constraints needed in multiple places
 //
 
-// U2: counts how many patients are currently assigned to each room.
+// U2: Counts how many patients are currently assigned to each room.
 // Needed for constraints: H7, H8.
 constraint with countPatientsForRoom {
 	context.variables.patientCount
@@ -426,7 +426,7 @@ constraint with countPatientsForRoom {
 }
 
 //
-// Objective Function with necessary utility constraints
+// Objective function with necessary utility constraints
 //
 
 /* --------------------------------------------------------------------------------------------------------------------- */
@@ -438,7 +438,7 @@ function calculateAgeDifference with roomDayTuple {
 	mappings.ageGroupsInRoom->join((r, r), (d,d))->sum(element.variables.minAgeGroup * element.nodes.ag.group)
 }
 
-// U8: sets the mapping to true if the ageGroup is present in the room on a specific day.
+// U8: Sets the mapping to 1 if the `ageGroup` is present in the room on a specific day.
 constraint with ageGroupsInRoom {
 	context.value == 1
 	<==>
@@ -449,7 +449,7 @@ constraint with ageGroupsInRoom {
 	)->sum(element.variables.isSelected) >= 1
 }
 
-// U17: Sets an auxiliary variable for expressing U9 without a boolean equivalence.
+// U17: Sets an auxiliary variable for expressing U9 without a Boolean equivalence.
 constraint with ageGroupsInRoom {
 	context.variables.noSmallerAgeGroup == 1
 	<==>
@@ -458,7 +458,7 @@ constraint with ageGroupsInRoom {
 	)->sum(element.value) == 0
 }
 
-// U9: Sets the variable to true if the age group is the smallest in the room on that day.
+// U9: Sets the variable to 1 if the age group is the smallest in the room on that day.
 constraint with ageGroupsInRoom {
 	context.variables.minAgeGroup == 1
 	<==>
@@ -469,7 +469,7 @@ constraint with ageGroupsInRoom {
 	]
 }
 
-// U18: Sets an auxiliary variable for expressing U10 without a boolean equivalence.
+// U18: Sets an auxiliary variable for expressing U10 without a Boolean equivalence.
 constraint with ageGroupsInRoom {
 	context.variables.noGreaterAgeGroup == 1
 	<==>
@@ -478,7 +478,7 @@ constraint with ageGroupsInRoom {
 	)->sum(element.value) == 0
 }
 
-// U10: Sets the variable to true if the age group is the greatest in the room on that day.
+// U10: Sets the variable to 1 if the age group is the greatest in the room on that day.
 constraint with ageGroupsInRoom {
 	context.variables.maxAgeGroup == 1
 	<==>
@@ -516,7 +516,7 @@ function calculateOpenOTs with Day {
 	mappings.openOTs->filter(element.nodes.c.day == context.number)->sum(element.value)
 }
 
-// U4: sets the mapping to true if there is at least one surgery assigned to the OT on that day.
+// U4: Sets the mapping to 1 if there is at least one surgery assigned to the OT on that day.
 constraint with openOTs {
 	mappings.selectedOperationDay->join((c, c))->sum(element.value) >= 1
 	<==>
@@ -530,14 +530,14 @@ function calculateOTsPerSurgeon with surgeonPenalizedOTs {
 	context.variables.penalizedOTs
 }
 
-// U5: sets the mapping to true if the surgeon operates in the OT on that day.
+// U5: Sets the mapping to 1 if the surgeon operates in the OT on that day.
 constraint with surgeonInOT {
 	context.value == 1
 	<==>
 	mappings.selectedOperationDay->join((opTime, op), (relatedOT, inOT))->sum(element.value) >= 1
 }
 
-// U6: counts the penalized OTs per surgeon for each day, which must be at greater or equal to 0.
+// U6: Counts the penalized OTs per surgeon for each day, which must be at greater or equal to 0.
 constraint with surgeonPenalizedOTs {
 	context.variables.penalizedOTs
 	>=
