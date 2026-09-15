@@ -5,8 +5,8 @@ import
 // Preprocessing for all virtual elements between `Roster` and `Shift`
 //
 
-// Finds an existing virtual roster shift object for a specific
-// roster and a specific shift.
+// Finds an existing virtual roster shift object for a specific roster and a
+// specific shift.
 pattern findVirtualShiftToRoster {
 	roster : Roster
 
@@ -19,9 +19,9 @@ pattern findVirtualShiftToRoster {
 }
 condition noVirtualShiftToRoster = forbid findVirtualShiftToRoster
 
-// Create a new virtual shift to roster object for a specific
-// shift and a specific roster. There must not be an existing
-// virtual shift to roster object connecting those two.
+// Create a new virtual shift to roster object for a specific shift and a
+// specific roster. There must not be an existing virtual shift to roster
+// object connecting those two.
 rule assignNurseToRoomVirtual_preproc {
 	roster : Roster {
 		++ - virtualShift -> vnew
@@ -46,7 +46,7 @@ when noVirtualShiftToRoster
 // `Workload`
 //
 
-// Pattern to find assigned first Shifts for Patients
+// Pattern to find assigned first shifts for patients
 pattern patientShiftIsAssigned {
 	w : Workload
 
@@ -71,7 +71,7 @@ condition compatibleRoomForPatient = forbid incompatibleRoomForPatient
 condition compatibleRoomAndNotAssigned =
 	compatibleRoomForPatient && patientShiftIsNotAssigned
 
-// Pattern that creates a Virtual Node between Shift and Workload to assign a
+// Pattern that creates a virtual node between Shift and Workload to assign a
 // patient to a room
 rule assignPatientToRoomVirtual_preproc {
 	p : Patient {
