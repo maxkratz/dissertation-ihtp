@@ -3,7 +3,6 @@ package org.emoflon.gips.ihtc.runner;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,6 +27,7 @@ import org.emoflon.gips.core.milp.SolverOutput;
 import org.emoflon.gips.core.util.IMeasurement;
 import org.emoflon.gips.core.util.Observer;
 import org.emoflon.smartemf.persistence.SmartEMFResourceFactoryImpl;
+import org.graphstream.graph.ElementNotFoundException;
 
 import com.gurobi.gurobi.GRBException;
 
@@ -213,6 +213,8 @@ public abstract class AbstractIhtcGipsRunner {
 	protected double buildAndSolve(final GipsEngineAPI<?, ?> gipsApi, final boolean verbose) {
 		Objects.requireNonNull(gipsApi);
 
+		final Observer observer = new Observer();
+
 		// If there is a reasonable GIPS build time limit, use it
 		if (buildTimeLimit > 0) {
 			logger.info("Starting GIPS build with time limit of " + buildTimeLimit + "s.");
@@ -230,7 +232,7 @@ public abstract class AbstractIhtcGipsRunner {
 				try {
 					// Wait for the build process to finish/time out
 					final Observer buildObserver = buildFuture.get();
-					Observer.getInstance().merge(buildObserver);
+					observer.merge(buildObserver);
 				} catch (final CancellationException ex) {
 					// If the execution was cancelled, a time out occurred
 					logger.warning("GIPS build process violated the build time limit. "
@@ -260,16 +262,21 @@ public abstract class AbstractIhtcGipsRunner {
 			logger.info("Starting GIPS build without any time limit.");
 			// First parameter: do update
 			// Second parameter: parallel build
-			gipsApi.buildProblemTimed(true, true);
-
+			gipsApi.buildProblem(true, true);
 		}
-		logObserverMeasurement("PM", verbose);
-		logObserverMeasurement("BUILD_GIPS", verbose);
-		logObserverMeasurement("BUILD_SOLVER", verbose);
-		logObserverMeasurement("BUILD", verbose);
 
-		try (final SolverOutput output = gipsApi.solveProblemTimed()) {
-			logObserverMeasurement("SOLVE_PROBLEM", verbose);
+		logObserverMeasurement("PM", verbose,
+				gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_BUILD));
+		logObserverMeasurement("BUILD_GIPS", verbose,
+				gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_BUILD));
+		logObserverMeasurement("BUILD_SOLVER", verbose,
+				gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_BUILD));
+		logObserverMeasurement("BUILD", verbose,
+				gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_BUILD));
+
+		try (final SolverOutput output = gipsApi.solveProblem()) {
+			logObserverMeasurement("SOLVE_PROBLEM", verbose,
+					gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_SOLVE));
 			if (output.solutionCount() == 0) {
 				gipsApi.terminate();
 				logger.warning("No solution found. Aborting.");
@@ -517,14 +524,16 @@ public abstract class AbstractIhtcGipsRunner {
 	 * @param measurementName Measurement name to log the corresponding
 	 *                        measurement's value for.
 	 * @param verbose         If false, nothing will be logged.
+	 * @param measurements    The given measurements to retrieve values from.
 	 */
-	protected void logObserverMeasurement(final String measurementName, final boolean verbose) {
+	protected void logObserverMeasurement(final String measurementName, final boolean verbose,
+			final Map<String, IMeasurement> measurements) {
 		Objects.requireNonNull(measurementName);
 		if (verbose) {
-			final Map<String, IMeasurement> measurements = new LinkedHashMap<>(
-					Observer.getInstance().getMeasurements("Eval"));
 			if (measurements.containsKey(measurementName)) {
 				logger.info(measurementName + ": " + measurements.get(measurementName).maxDurationSeconds() + "s.");
+			} else {
+				throw new ElementNotFoundException("Measurement with name <" + measurementName + "> not found.");
 			}
 		}
 	}
@@ -555,9 +564,8 @@ public abstract class AbstractIhtcGipsRunner {
 		 */
 		@Override
 		public Observer call() throws Exception {
-			Observer.getInstance().setCurrentSeries("Eval");
-			gipsApi.buildProblemTimed(true, true);
-			return Observer.getInstance();
+			gipsApi.buildProblem(true, true);
+			return gipsApi.getLatestMetrics().measurements();
 		}
 	}
 
