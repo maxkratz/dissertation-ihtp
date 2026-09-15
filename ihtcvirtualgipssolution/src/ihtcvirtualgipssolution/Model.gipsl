@@ -652,7 +652,7 @@ function calculateContinuityOfCare with Patient {
 	)->sum(element.value)
 }
 
-// U16: sets the mapping to 1 if the nurse is assigned to the patient.
+// U16: Sets the mapping to 1 if the nurse is assigned to the patient.
 constraint with assignedNurseForPatient {
 	context.value == 1
 	<=>
@@ -695,7 +695,7 @@ function calculateOpenOTs with Day {
 		filter(element.nodes.c.day == context.number)->sum(element.value)
 }
 
-// U4: sets the mapping to 1 if there is at least one surgery assigned to
+// U4: Sets the mapping to 1 if there is at least one surgery assigned to
 // the OT on that day.
 constraint with openOTs {
 	mappings.selectedOperationDay->filter(
