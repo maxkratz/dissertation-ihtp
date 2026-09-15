@@ -57,8 +57,8 @@ rule assignAdmissionDayToPatient {
 	# p.surgeryDueDate >= d.id
 }
 
-// H2: Compatible rooms: Patients can only be assigned to one of
-// their compatible rooms.
+// H2: Compatible rooms: Patients can only be assigned to one of their
+// compatible rooms.
 pattern roomPatientIncompatible {
 	p : Patient {
 		-incompatibleRooms -> r
@@ -218,10 +218,10 @@ mapping patientsInRoomOnDay to dayRoomTuple {
 	var load : EInt
 };
 
-// Mapping that is true if gender `g` is contained in room `r` on day `d`.
+// Mapping that is 1 if gender `g` is contained in room `r` on day `d`.
 mapping genderIsInRoomOnDay to dayGenderRoomTuple;
 
-// Mapping that is true if operating theater `relatedOT` has at least one
+// Mapping that is 1 if operating theater `relatedOT` has at least one
 // operation on day `d`.
 mapping openOTOnDay to dayOperatingTheaterTuple;
 
