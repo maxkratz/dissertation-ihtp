@@ -39,100 +39,88 @@ public class IhtcSoftCnstrTuningGipsRunner extends AbstractIhtcGipsRunner {
 	@Override
 	public void run() {
 		checkIfFileExists(inputPath);
-		Observer.getInstance().setCurrentSeries("Eval");
+		final Observer observer = new Observer();
+
 		final SingleMeasurement totalMeasurement = new SingleMeasurement();
 		totalMeasurement.start();
 
-		//
-		// Convert JSON input file to XMI file
-		//
+		observer.singleMeasurement("Eval", "TOTAL", () -> {
+			//
+			// Convert JSON input file to XMI file
+			//
 
-		final SingleMeasurement loadMeasurement = new SingleMeasurement();
-		loadMeasurement.start();
+			if (verbose) {
+				logger.info("=> Start JSON model loader.");
+			}
 
-		if (verbose) {
-			logger.info("=> Start JSON model loader.");
-		}
+			observer.singleMeasurement("Eval", "LOAD_MODEL", () -> {
+				transformJsonToModel(inputPath, instancePath);
+			});
+			logObserverMeasurement("LOAD_MODEL", verbose, observer.getStageMeasurements("Eval"));
 
-		transformJsonToModel(inputPath, instancePath);
-		loadMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "LOAD_MODEL", loadMeasurement);
-		logObserverMeasurement("LOAD_MODEL", verbose);
+			//
+			// Initialize GIPS API
+			//
 
-		//
-		// Initialize GIPS API
-		//
+			if (verbose) {
+				logger.info("=> Start GIPS init.");
+			}
 
-		final SingleMeasurement initMeasurement = new SingleMeasurement();
-		initMeasurement.start();
+			final SoftcnstrtuningGipsAPI gipsApi = observer.singleMeasurement("Eval", "INIT_GIPS", () -> {
+				final SoftcnstrtuningGipsAPI api = new SoftcnstrtuningGipsAPI();
+				XmiSetupUtil.checkIfEclipseOrJarSetup(api, instancePath);
+				return api;
+			});
+			logObserverMeasurement("INIT_GIPS", verbose, observer.getStageMeasurements("Eval"));
 
-		if (verbose) {
-			logger.info("=> Start GIPS init.");
-		}
+			// Set GIPS configuration parameters from this object
+			setGipsConfig(gipsApi);
 
-		Observer.getInstance().setCurrentSeries("Eval");
-		final SoftcnstrtuningGipsAPI gipsApi = new SoftcnstrtuningGipsAPI();
-		XmiSetupUtil.checkIfEclipseOrJarSetup(gipsApi, instancePath);
-		initMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "INIT_GIPS", initMeasurement);
-		logObserverMeasurement("INIT_GIPS", verbose);
+			//
+			// Run GIPS solution
+			//
 
-		// Set GIPS configuration parameters from this object
-		setGipsConfig(gipsApi);
+			buildAndSolve(gipsApi, verbose);
 
-		//
-		// Run GIPS solution
-		//
+			//
+			// Apply solution
+			//
 
-		buildAndSolve(gipsApi, verbose);
+			observer.singleMeasurement("Eval", "SOLUTION_APPLICATION", () -> {
+				applySolution(gipsApi, verbose);
+			});
+			logObserverMeasurement("SOLUTION_APPLICATION", verbose, observer.getStageMeasurements("Eval"));
 
-		//
-		// Apply solution
-		//
+			//
+			// GIPS save
+			//
 
-		final SingleMeasurement solutionApplicationMeasurement = new SingleMeasurement();
-		solutionApplicationMeasurement.start();
-		applySolution(gipsApi, verbose);
-		solutionApplicationMeasurement.stop();
+			observer.singleMeasurement("Eval", "GIPS_SAVE", () -> {
+				gipsSave(gipsApi, gipsOutputPath);
+			});
+			logObserverMeasurement("GIPS_SAVE", verbose, observer.getStageMeasurements("Eval"));
 
-		Observer.getInstance().addMeasurement("Eval", "SOLUTION_APPLICATION", solutionApplicationMeasurement);
-		logObserverMeasurement("SOLUTION_APPLICATION", verbose);
+			//
+			// Export
+			//
 
-		//
-		// GIPS save
-		//
+			if (verbose) {
+				logger.info("=> Start JSON export.");
+			}
 
-		final SingleMeasurement gipsSaveMeasurement = new SingleMeasurement();
-		gipsSaveMeasurement.start();
+			observer.singleMeasurement("Eval", "EXPORT", () -> {
+				exportToJson(gipsOutputPath, outputPath);
+			});
 
-		gipsSave(gipsApi, gipsOutputPath);
-		gipsSaveMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "GIPS_SAVE", gipsSaveMeasurement);
-		logObserverMeasurement("GIPS_SAVE", verbose);
+			logObserverMeasurement("EXPORT", verbose, observer.getStageMeasurements("Eval"));
 
-		//
-		// Export
-		//
+			//
+			// The end
+			//
 
-		final SingleMeasurement exportMeasurement = new SingleMeasurement();
-		exportMeasurement.start();
-
-		if (verbose) {
-			logger.info("=> Start JSON export.");
-		}
-		exportToJson(gipsOutputPath, outputPath);
-		exportMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "EXPORT", exportMeasurement);
-		logObserverMeasurement("EXPORT", verbose);
-
-		//
-		// The end
-		//
-
-		gipsApi.terminate();
-		totalMeasurement.stop();
-		Observer.getInstance().addMeasurement("Eval", "TOTAL", totalMeasurement);
-		logObserverMeasurement("TOTAL", verbose);
+			gipsApi.terminate();
+		});
+		logObserverMeasurement("TOTAL", verbose, observer.getStageMeasurements("Eval"));
 	}
 
 }
