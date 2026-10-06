@@ -17,3 +17,5 @@ ihtcvirtualrunner/scripts/gips-ihtc.jar
 ihtcvirtualrunner/scripts/ihtc2024_competition_instances/
 
 *.ilp
+
+*.zip
