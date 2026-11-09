@@ -1,5 +1,487 @@
 package org.emoflon.gips.ihtc.virtual.pipeline.runner;
 
-public class AbstractIhtcVirtualGipsPipelineRunner {
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.emoflon.gips.core.api.GipsEngineAPI;
+import org.emoflon.gips.core.milp.SolverOutput;
+import org.emoflon.gips.core.util.IMeasurement;
+import org.emoflon.gips.core.util.Observer;
+import org.emoflon.gips.ihtc.virtual.runner.utils.FileUtils;
+import org.emoflon.smartemf.persistence.SmartEMFResourceFactoryImpl;
+import org.graphstream.graph.ElementNotFoundException;
+
+import com.gurobi.gurobi.GRBException;
+
+import ihtcvirtualmetamodel.Root;
+import ihtcvirtualmetamodel.importexport.JsonToModelLoader;
+import ihtcvirtualmetamodel.importexport.ModelToJsonExporter;
+import ihtcvirtualnpa.api.gips.IhtcvirtualnpaGipsAPI;
+import ihtcvirtualpreprocessing.PreprocessingNoGtApp;
+import ihtcvirtualscppra.api.gips.IhtcvirtualscppraGipsAPI;
+
+public abstract class AbstractIhtcVirtualGipsPipelineRunner {
+
+	/**
+	 * Logger for system outputs.
+	 */
+	protected final Logger logger = Logger.getLogger(AbstractIhtcVirtualGipsPipelineRunner.class.getName());
+
+	/**
+	 * The scenario (JSON) file to load.
+	 */
+	public String scenarioFileName = "i01.json";
+
+	/**
+	 * Project folder location.
+	 */
+	public String projectFolder = System.getProperty("user.dir");
+
+	/**
+	 * Data set folder location.
+	 */
+	public String datasetFolder = projectFolder + "/../ihtcvirtualmetamodel/resources/ihtc2024_competition_instances/";
+
+	/**
+	 * Default input path.
+	 */
+	public String inputPath;
+
+	/**
+	 * Default instance folder path.
+	 */
+	public String instanceFolder = projectFolder + "/../ihtcvirtualmetamodel/instances/";
+
+	/**
+	 * Default instance XMI path.
+	 */
+	public String instancePath;
+
+	/**
+	 * Default pre-processing output XMI path.
+	 */
+	public String preprocessingPath;
+
+	/**
+	 * Default instance solved XMI path.
+	 */
+	public String gipsOutputPath;
+
+	/**
+	 * Default post-processing output XMI path.
+	 */
+	public String postProcOutputPath;
+
+	/**
+	 * Default JSON output folder path.
+	 */
+	public String datasetSolutionFolder = projectFolder + "/../ihtcvirtualmetamodel/resources/";
+
+	/**
+	 * Default JSON output file path.
+	 */
+	public String outputPath;
+
+	/**
+	 * Default Output FDolder for Debug-files
+	 */
+	public String debugFolder = projectFolder + "/../ihtcvirtualmetamodel/instances/debug/";
+
+	/**
+	 * Default Output Path for Debug-file of current model instance
+	 */
+	public String debugOutputPath;
+
+	/**
+	 * Creates a new instance of this class, sets up the logging, and derives all
+	 * paths that depend on the scenario file name.
+	 */
+	public AbstractIhtcVirtualGipsPipelineRunner() {
+		// Configure logging
+		logger.setUseParentHandlers(false);
+		final ConsoleHandler handler = new ConsoleHandler();
+		handler.setFormatter(new Formatter() {
+			@Override
+			public String format(final LogRecord record) {
+				Objects.requireNonNull(record, "Given log entry was null.");
+				return record.getMessage() + System.lineSeparator();
+			}
+		});
+		logger.addHandler(handler);
+		derivePathsFromScenario();
+	}
+
+	/**
+	 * Updates/derives the paths of this object that depend on the scenario file
+	 * `scenarioFileName`.
+	 */
+	public void derivePathsFromScenario() {
+		inputPath = datasetFolder + scenarioFileName;
+		instancePath = instanceFolder + scenarioFileName.replace(".json", ".xmi");
+		gipsOutputPath = instanceFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
+				+ "_solved.xmi";
+		outputPath = datasetSolutionFolder + "sol_"
+				+ scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json")) + "_gips.json";
+		debugOutputPath = debugFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
+				+ "_debug.txt";
+		preprocessingPath = instancePath.substring(0, instancePath.lastIndexOf(".xmi")) + "_pre-proc.xmi";
+		postProcOutputPath = gipsOutputPath.substring(0, gipsOutputPath.lastIndexOf(".xmi")) + "_post-proc.xmi";
+	}
+
+	/**
+	 * Saves the result of a run of a given GIPS API to a given path as XMI file.
+	 * 
+	 * @param gipsApi GIPS API to save results from.
+	 * @param path    (XMI) path to save the results to.
+	 */
+	protected void gipsSave(final GipsEngineAPI<?, ?> gipsApi, final String path) {
+		Objects.requireNonNull(gipsApi);
+		Objects.requireNonNull(path);
+		logger.info("Saving GIPS output XMI file to: " + path);
+		try {
+			gipsApi.saveResult(path);
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Writes the given ResourceSet to an XMI file at the given file path.
+	 * 
+	 * @param path File path to save the ResourceSet's contents to.
+	 * @param rs   ResourceSet which should be saved to file.
+	 */
+	protected void writeXmiToFile(final String path, final ResourceSet rs) {
+		Objects.requireNonNull(path);
+		Objects.requireNonNull(rs);
+
+		logger.info("Saving resource set <" + rs + "> to path: " + path);
+
+		// Workaround: Always use absolute path
+		final URI absPath = URI.createFileURI(path);
+
+		// Create new model for saving
+		final ResourceSet rs2 = new ResourceSetImpl();
+		rs.getResourceFactoryRegistry().getExtensionToFactoryMap().put("xmi", new SmartEMFResourceFactoryImpl(null));
+		// ^null is okay if all paths are absolute
+		final Resource r = rs2.createResource(absPath);
+		// Fetch model contents from eMoflon
+		r.getContents().add(rs.getResources().get(0).getContents().get(0));
+		try {
+			r.save(null);
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Builds and solves the ILP problem for the given GIPS API. Also prints the
+	 * objective value to the console and throws an error if no solution could be
+	 * found.
+	 * 
+	 * @param gipsApi         GIPS API to build and solve the ILP problem for.
+	 * @param verbose         If true, the method will print some more information
+	 *                        about the objective value.
+	 * @param buildTimeLimit: Configures the time out value for the GIPS build
+	 *                        process in seconds.
+	 * @return Returns the objective value.
+	 */
+	protected double buildAndSolve(final GipsEngineAPI<?, ?> gipsApi, final boolean verbose, final int buildTimeLimit) {
+		Objects.requireNonNull(gipsApi);
+		Objects.requireNonNull(verbose);
+
+		final Observer observer = new Observer();
+
+		// If there is a reasonable GIPS build time limit, use it
+		if (buildTimeLimit > 0) {
+			logger.info("Starting GIPS build with time limit of " + buildTimeLimit + "s.");
+			final ExecutorService executor = Executors.newSingleThreadExecutor();
+			try {
+				// Schedule the GIPS build process
+				final List<Future<Observer>> futures = executor.invokeAll(Arrays.asList(new GipsBuildWrapper(gipsApi)),
+						buildTimeLimit, TimeUnit.SECONDS);
+				// If the executor did not return exactly one future, something is broken
+				if (futures.size() != 1) {
+					throw new InternalError();
+				}
+				final Future<Observer> buildFuture = futures.get(0);
+
+				try {
+					// Wait for the build process to finish/time out
+					final Observer buildObserver = buildFuture.get();
+					observer.merge(buildObserver);
+				} catch (final CancellationException ex) {
+					// If the execution was cancelled, a time out occurred
+					logger.warning("GIPS build process violated the build time limit. "
+							+ "GIPS now terminates the Java process.");
+					System.exit(1);
+				} catch (final ExecutionException ex) {
+					// Check if cause was a Gurobi OOM error during build
+					if (ex.getCause() instanceof GRBException gurobiException) {
+						if (gurobiException.getMessage() != null
+								&& gurobiException.getMessage().contains("Out of memory")) {
+							logger.warning("GIPS building threw an OOM error. GIPS now terminates the Java process.");
+							System.exit(1);
+						}
+					}
+
+					// All other cases
+					throw new RuntimeException(ex);
+				}
+			} catch (final InterruptedException ex) {
+				logger.warning("Caught an InterruptedException.");
+				ex.printStackTrace();
+				// Should not occur
+			}
+			executor.shutdown();
+		} else {
+			// else: execute GIPS build normally
+			logger.info("Starting GIPS build without any time limit.");
+			// First parameter: do update
+			// Second parameter: parallel build
+			gipsApi.buildProblem(true, true);
+		}
+
+		logObserverMeasurement("PM", verbose,
+				gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_BUILD));
+		logObserverMeasurement("BUILD_GIPS", verbose,
+				gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_BUILD));
+		logObserverMeasurement("BUILD_SOLVER", verbose,
+				gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_BUILD));
+		logObserverMeasurement("BUILD", verbose,
+				gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_BUILD));
+
+		try (final SolverOutput output = gipsApi.solveProblem()) {
+			logObserverMeasurement("SOLVE_PROBLEM", verbose,
+					gipsApi.getLatestMetrics().measurements().getStageMeasurements(Observer.STAGE_SOLVE));
+			if (output.solutionCount() == 0) {
+				gipsApi.terminate();
+				logger.warning("No solution found. Aborting.");
+				throw new InternalError("No solution found!");
+			}
+			if (verbose) {
+				logger.info("=> Objective value: " + output.objectiveValue());
+			}
+			return output.objectiveValue();
+		} catch (final OutOfMemoryError err) {
+			logger.warning("GIPS solving threw an OOM error. GIPS now terminates the Java process.");
+			System.exit(1);
+		}
+		// The program will never get here.
+		return -1;
+	}
+
+	/**
+	 * Builds and solves the MILP problem for the given GIPS API. Also prints the
+	 * objective value to the console and throws an error if no solution could be
+	 * found. This method does not include any build time limit.
+	 * 
+	 * @param gipsApi GIPS API to build and solve the ILP problem for.
+	 * @param verbose If true, the method will print some more information about the
+	 *                objective value.
+	 * @return Returns the objective value.
+	 */
+	protected double buildAndSolve(final GipsEngineAPI<?, ?> gipsApi, final boolean verbose) {
+		// Do not configure a time limit at all.
+		return buildAndSolve(gipsApi, verbose, 0);
+	}
+
+	/**
+	 * Applies the best found solution (i.e., all non-zero mappings) with a given
+	 * IHTC 2024 project GIPS API object.
+	 * 
+	 * @param gipsApi IHTC 2024 project GIPS API object to get all mapping
+	 *                information from.
+	 * @param verbose If true, the method will print some more information about the
+	 *                GT rule application.
+	 */
+	protected void applySolutionNoGt(final IhtcvirtualscppraGipsAPI gipsApi, final boolean verbose) {
+		Objects.requireNonNull(gipsApi);
+
+		// Apply found solution
+		final long tick = System.nanoTime();
+
+		gipsApi.getSelectedOperationDay().getNonZeroVariableMappings().forEach(m -> {
+			m.getMatch().getVopc().setIsSelected(true);
+			m.getMatch().getVwc().setIsSelected(true);
+		});
+		gipsApi.getSelectedShiftToFirstWorkload().getNonZeroVariableMappings().forEach(m -> {
+			m.getMatch().getVsw().setIsSelected(true);
+		});
+		gipsApi.getSelectedExtendingShiftToWorkload().getNonZeroVariableMappings().forEach(m -> {
+			m.getMatch().getNextvsw().setIsSelected(true);
+		});
+		gipsApi.getSelectedOccupantNodes().getNonZeroVariableMappings().forEach(m -> {
+			m.getMatch().getVsw().setIsSelected(true);
+		});
+
+		final long tock = System.nanoTime();
+		if (verbose) {
+			logger.info("=> Solution application (no GT) duration: " + (tock - tick) / 1_000_000_000 + "s.");
+		}
+	}
+
+	/**
+	 * Applies the best found solution (i.e., all non-zero mappings) with a given
+	 * IHTC 2024 project GIPS API object.
+	 * 
+	 * @param gipsApi IHTC 2024 project GIPS API object to get all mapping
+	 *                information from.
+	 * @param verbose If true, the method will print some more information about the
+	 *                GT rule application.
+	 */
+	protected void applySolutionNoGt(final IhtcvirtualnpaGipsAPI gipsApi, final boolean verbose) {
+		Objects.requireNonNull(gipsApi);
+
+		// Apply found solution
+		final long tick = System.nanoTime();
+
+		gipsApi.getSelectedShiftToRoster().getNonZeroVariableMappings().forEach(m -> {
+			m.getMatch().getVsr().setIsSelected(true);
+		});
+
+		final long tock = System.nanoTime();
+		if (verbose) {
+			logger.info("=> Solution application (no GT) duration: " + (tock - tick) / 1_000_000_000 + "s.");
+		}
+	}
+
+	/**
+	 * Transforms a given JSON file to an XMI file.
+	 * 
+	 * @param inputJsonPath Input JSON file.
+	 * @param outputXmiPath Output XMI file.
+	 */
+	protected void transformJsonToModel(final String inputJsonPath, final String outputXmiPath) {
+		final JsonToModelLoader loader = new JsonToModelLoader();
+		loader.jsonToModel(inputJsonPath);
+		final Root model = loader.getModel();
+		try {
+			// Prepare folder if necessary
+			if (outputXmiPath.contains("/")) {
+				FileUtils.prepareFolder(outputXmiPath.substring(0, outputXmiPath.lastIndexOf("/")));
+			}
+			FileUtils.save(model, outputXmiPath);
+		} catch (final IOException e) {
+			throw new InternalError(e.getMessage());
+		}
+	}
+
+	/**
+	 * Transforms the model to JSON.
+	 */
+	protected void transformModelToJson() {
+		final Resource loadedResource = FileUtils.loadModel(gipsOutputPath);
+		final Root solvedHospital = (Root) loadedResource.getContents().get(0);
+		final ModelToJsonExporter exporter = new ModelToJsonExporter(solvedHospital);
+		logger.info("Writing output JSON file to: " + outputPath);
+		exporter.modelToJson(outputPath);
+	}
+
+	/**
+	 * Pre-processing method that runs the separated Java-based pre-processing
+	 * implementation. The given `instancePath` will be used to load the XMI model.
+	 * The produced (altered) model file will be written to `outputPath`.
+	 * 
+	 * @param instancePath Model (XMI) to load.
+	 * @param outputPath   Model (XMI) to save the result to.
+	 */
+	protected void preprocessNoGt(final String instancePath, final String outputPath) {
+		Objects.requireNonNull(instancePath);
+
+		final PreprocessingNoGtApp app = new PreprocessingNoGtApp(instancePath, outputPath);
+		app.run();
+	}
+
+	/**
+	 * Checks if a file for the given path exists and throws an exception otherwise.
+	 * 
+	 * @param path Path to check the file existence for.
+	 */
+	protected void checkIfFileExists(final String path) {
+		Objects.requireNonNull(path);
+
+		final File xmiInputFile = new File(path);
+		if (!xmiInputFile.exists() || xmiInputFile.isDirectory()) {
+			throw new IllegalArgumentException("File <" + path + "> could not be found.");
+		}
+	}
+
+	/**
+	 * Logs the measurement value of the given measurements name to console if the
+	 * `verbose` flag is activated and a corresponding measurement has already been
+	 * recorded.
+	 * 
+	 * @param measurementName Measurement name to log the corresponding
+	 *                        measurement's value for.
+	 * @param verbose         If false, nothing will be logged.
+	 * @param measurements    The given measurements to retrieve values from.
+	 */
+	protected void logObserverMeasurement(final String measurementName, final boolean verbose,
+			final Map<String, IMeasurement> measurements) {
+		Objects.requireNonNull(measurementName);
+		if (verbose) {
+			if (measurements.containsKey(measurementName)) {
+				logger.info(measurementName + ": " + measurements.get(measurementName).maxDurationSeconds() + "s.");
+			} else {
+				throw new ElementNotFoundException("Measurement with name <" + measurementName + "> not found.");
+			}
+		}
+	}
+
+	/**
+	 * Runs the execution of the configured scenario.
+	 */
+	protected abstract void run();
+
+	/**
+	 * Wraps the GIPS build problem (timed) call into a `Callable` object.
+	 */
+	private class GipsBuildWrapper implements Callable<Observer> {
+		/**
+		 * The GIPS API object to build the MILP problem with.
+		 */
+		final GipsEngineAPI<?, ?> gipsApi;
+
+		/**
+		 * Creates a new instance of this wrapper class for the given GIPS API object.
+		 * 
+		 * @param gipsApi GIPS API object to build the wrapper class for.
+		 */
+		public GipsBuildWrapper(final GipsEngineAPI<?, ?> gipsApi) {
+			Objects.requireNonNull(gipsApi);
+			this.gipsApi = gipsApi;
+		}
+
+		/**
+		 * Call method to actually build the MILP problem. Always returns null.
+		 * 
+		 * @return Observer from this Thread.
+		 */
+		@Override
+		public Observer call() throws Exception {
+			gipsApi.buildProblem(true, true);
+			return gipsApi.getLatestMetrics().measurements();
+		}
+	}
 
 }

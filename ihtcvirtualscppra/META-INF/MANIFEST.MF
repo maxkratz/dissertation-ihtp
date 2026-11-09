@@ -13,3 +13,5 @@ Require-Bundle: org.emoflon.ibex.common,
  org.emoflon.ibex.gt.democles,
  org.emoflon.ibex.gt.hipe,
  ihtcvirtualmetamodel
+Export-Package: ihtcvirtualscppra.api.gips,
+ ihtcvirtualscppra.api.matches
