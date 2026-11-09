@@ -10,7 +10,7 @@ It was forked from the [gips-examples repository](https://github.com/Echtzeitsys
 
 * Install [GIPS](https://github.com/Echtzeitsysteme/gips) as described in its [repository](https://github.com/Echtzeitsysteme/gips).
 * Launch a runtime workspace (while using a runtime Eclipse) as stated in the eMoflon::IBeX installation steps. (Please refer to the installation steps of GIPS above.)
-* Use this [PSF file](https://raw.githubusercontent.com/maxkratz/disseration-ihtp/main/projectSet.psf) to import all of the dissertation-related projects.
+* Use this [PSF file](https://raw.githubusercontent.com/maxkratz/dissertation-ihtp/main/projectSet.psf) to import all of the dissertation-related projects.
 * Build all your projects with the black eMoflon hammer. Sometimes, it is required to trigger a cleaning in Eclipse (*Project -> Clean... -> Clean all projects*).
 * Runner projects contain runnable Java classes with a `main` function.
 

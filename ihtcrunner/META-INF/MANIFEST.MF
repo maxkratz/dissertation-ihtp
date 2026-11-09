@@ -12,6 +12,6 @@ Require-Bundle: ihtcmetamodel;bundle-version="0.0.1",
  ihtcgipssolution.softcnstrtuning;bundle-version="1.0.0",
  org.apache.commons.cli;bundle-version="1.9.0"
 Automatic-Module-Name: ihtcrunner
-Bundle-RequiredExecutionEnvironment: JavaSE-21
+Bundle-RequiredExecutionEnvironment: JavaSE-25
 Import-Package: ihtcgipssolution.softcnstrtuning.api.gips,
  org.apache.commons.cli;version="[1.9.0,2.0.0)"
