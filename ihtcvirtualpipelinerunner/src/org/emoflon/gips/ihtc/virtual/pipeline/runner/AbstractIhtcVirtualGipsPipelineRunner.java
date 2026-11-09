@@ -36,6 +36,7 @@ import ihtcvirtualmetamodel.Root;
 import ihtcvirtualmetamodel.importexport.JsonToModelLoader;
 import ihtcvirtualmetamodel.importexport.ModelToJsonExporter;
 import ihtcvirtualnpa.api.gips.IhtcvirtualnpaGipsAPI;
+import ihtcvirtualpreprocessing.PreprocessingGtApp;
 import ihtcvirtualpreprocessing.PreprocessingNoGtApp;
 import ihtcvirtualscppra.api.gips.IhtcvirtualscppraGipsAPI;
 
@@ -85,7 +86,7 @@ public abstract class AbstractIhtcVirtualGipsPipelineRunner {
 	 * Default instance solved XMI path.
 	 */
 	public String gipsOutputPath;
-	
+
 	/**
 	 * Default instance temporary XMI path.
 	 */
@@ -145,7 +146,7 @@ public abstract class AbstractIhtcVirtualGipsPipelineRunner {
 		gipsOutputPath = instanceFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
 				+ "_solved.xmi";
 		gipsTmpPath = instanceFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
-		+ "_tmp.xmi";
+				+ "_tmp.xmi";
 		outputPath = datasetSolutionFolder + "sol_"
 				+ scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json")) + "_gips.json";
 		debugOutputPath = debugFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
@@ -321,6 +322,29 @@ public abstract class AbstractIhtcVirtualGipsPipelineRunner {
 	 * @param verbose If true, the method will print some more information about the
 	 *                GT rule application.
 	 */
+	protected void applySolution(final IhtcvirtualscppraGipsAPI gipsApi, final boolean verbose) {
+		Objects.requireNonNull(gipsApi);
+
+		// Apply found solution
+		// Do not update the pattern matcher on purpose
+		gipsApi.getSelectedOperationDay().applyNonZeroMappings(false);
+		gipsApi.getSelectedShiftToFirstWorkload().applyNonZeroMappings(false);
+		gipsApi.getSelectedExtendingShiftToWorkload().applyNonZeroMappings(false);
+		gipsApi.getSelectedOccupantNodes().applyNonZeroMappings(false);
+
+		// Update the pattern matcher after all rule applications once
+		gipsApi.update();
+	}
+
+	/**
+	 * Applies the best found solution (i.e., all non-zero mappings) with a given
+	 * IHTC 2024 project GIPS API object.
+	 * 
+	 * @param gipsApi IHTC 2024 project GIPS API object to get all mapping
+	 *                information from.
+	 * @param verbose If true, the method will print some more information about the
+	 *                GT rule application.
+	 */
 	protected void applySolutionNoGt(final IhtcvirtualscppraGipsAPI gipsApi, final boolean verbose) {
 		Objects.requireNonNull(gipsApi);
 
@@ -330,6 +354,7 @@ public abstract class AbstractIhtcVirtualGipsPipelineRunner {
 		gipsApi.getSelectedOperationDay().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getVopc().setIsSelected(true);
 			m.getMatch().getVwc().setIsSelected(true);
+			m.getMatch().getVwop().setIsSelected(true);
 		});
 		gipsApi.getSelectedShiftToFirstWorkload().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getVsw().setIsSelected(true);
@@ -402,6 +427,22 @@ public abstract class AbstractIhtcVirtualGipsPipelineRunner {
 		final ModelToJsonExporter exporter = new ModelToJsonExporter(solvedHospital);
 		logger.info("Writing output JSON file to: " + outputPath);
 		exporter.modelToJson(outputPath);
+	}
+
+	/**
+	 * Pre-processing method that runs the separated GT rule set. The given
+	 * `instancePath` will be used to load the XMI model. The produced (altered)
+	 * model file will be written to `outputPath`.
+	 * 
+	 * @param instancePath Model (XMI) to load.
+	 * @param outputPath   Model (XMI) to save the result to.
+	 */
+	protected void preprocess(final String instancePath, final String outputPath) {
+		Objects.requireNonNull(instancePath);
+
+		final PreprocessingGtApp app = new PreprocessingGtApp(instancePath, outputPath);
+		app.run();
+		// The app will terminate itself
 	}
 
 	/**

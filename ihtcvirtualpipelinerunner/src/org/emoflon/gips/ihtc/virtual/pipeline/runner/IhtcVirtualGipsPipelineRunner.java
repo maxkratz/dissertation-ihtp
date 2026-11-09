@@ -142,8 +142,8 @@ public class IhtcVirtualGipsPipelineRunner extends AbstractIhtcVirtualGipsPipeli
 				if (preProcNoGt) {
 					preprocessNoGt(instancePath, preprocessingPath);
 				} else {
-					throw new UnsupportedOperationException();
-//					preprocess(instancePath, preprocessingPath);
+//					throw new UnsupportedOperationException();
+					preprocess(instancePath, preprocessingPath);
 				}
 			});
 			logObserverMeasurement("PREPROC", verbose, observer.getStageMeasurements("Eval"));
@@ -180,8 +180,7 @@ public class IhtcVirtualGipsPipelineRunner extends AbstractIhtcVirtualGipsPipeli
 				if (applicationNoGt) {
 					applySolutionNoGt(gipsApi, verbose);
 				} else {
-					throw new UnsupportedOperationException();
-//					applySolution(gipsApi, verbose);
+					applySolution(gipsApi, verbose);
 				}
 			});
 			logObserverMeasurement("SOLUTION_APPLICATION", verbose, observer.getStageMeasurements("Eval"));
