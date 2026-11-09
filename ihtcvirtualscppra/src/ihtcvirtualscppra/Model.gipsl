@@ -102,20 +102,6 @@ rule selectOperationDay {
 	relatedOT : OT
 }
 
-// NPA: Rule that selects an  VirtualShiftToRoster-Node to be adopted in the final model.
-rule selectShiftToRoster {
-	vsr : VirtualShiftToRoster {
-		.isSelected := true
-		- shift -> s
-	}
-
-	s : Shift {
-		- room -> r
-	}
-
-	r : Room
-}
-
 //
 // Utility Patterns used in Constraints
 //
@@ -202,15 +188,6 @@ pattern genderRoomShift {
 	# s.shiftNo % 3 == 0
 }
 
-// Used in a mapping to calculate the workload for all nurses for each shift.
-pattern nurseRosterTuple {
-	n : Nurse {
-		- rosters -> ro
-	}
-
-	ro : Roster
-}
-
 // Used in a mapping to save the information if a surgeon is operating in a specific OT for each day.
 pattern surgeonOTForDay {
 	s : Surgeon {
@@ -236,40 +213,6 @@ pattern roomDayTuple {
 	d : Day
 }
 
-// Used in a mapping to calculate which nurse is assigned to which workload.
-pattern nurseToWorkload {
-	vsr : VirtualShiftToRoster {
-		- shift -> s
-		- roster -> ro
-	}
-
-	ro : Roster {
-		- nurse -> n
-	}
-
-	n : Nurse
-
-	s : Shift {
-		- virtualWorkload -> vsw
-	}
-
-	vsw : VirtualShiftToWorkload {
-		- workload -> w
-	}
-
-	w : Workload {
-		- patient -> p
-	}
-
-	p : Patient
-}
-
-// Used to filter for the amount of different nurses assigned to each patient.
-pattern nursePatientTuple {
-	p : Patient
-	n : Nurse
-}
-
 //
 // GIPSL
 //
@@ -291,9 +234,6 @@ mapping selectedOccupantNodes to virtualNodesForOccupant;
 // SCP.1-3: Decides on what day and in which OT a patient is operated on.
 mapping selectedOperationDay to selectOperationDay;
 
-// NPA: Decides which nurses are assigned to a shift/room on a specific day.
-mapping selectedShiftToRoster to selectShiftToRoster;
-
 //
 // Utility Mappings
 //
@@ -307,9 +247,7 @@ mapping countPatientsForRoom to roomForShift {
 // Mapping for all assigned patients. (occupants and new patients for each workload (first + following)).
 // penalizedSkillDiff: maximum of 0 and the calculated difference between the skill level of a nurse and
 // the workload she is assigned to.
-mapping assignedPatientsToRoom to patientForRoom {
-	var penalizedSkillDiff : EInt
-};
+mapping assignedPatientsToRoom to patientForRoom;
 
 // Mapping that holds the information if a specific gender is assigned to a room on a specific day.
 mapping assignedGenderToRoomOnShift to genderRoomShift;
@@ -338,17 +276,6 @@ mapping ageGroupsInRoom to ageGroupsRoomDay {
 	var noSmallerAgeGroup : EBoolean
 	var noGreaterAgeGroup : EBoolean
 };
-
-// mapping that holds the information what workloads a roster is responsible for / assigned to.
-mapping assignedNursesToWorkload to nurseToWorkload;
-
-// mapping used to calculate the sum of workloads for a roster.
-// excessiveWorkload: excessive workload of that nurse in comparison to her maximum workload.
-mapping nurseWorkloadForDay to nurseRosterTuple {
-	var excessiveWorkload : EInt
-};
-
-mapping assignedNurseForPatient to nursePatientTuple;
 
 //
 // Hard Constraints
@@ -421,39 +348,6 @@ constraint with countPatientsForRoom {
 }
 
 /* --------------------------------------------------------------------------------------------------------------------- */
-
-// H8 Nurse presence: Nurses are not assigned to empty rooms and each nonempty room in each shift is assigned to one nurse.
-// This constraint was previously implemented by an additional constraint, before it was added as a hard constraint by the IHTC.
-
-constraint with countPatientsForRoom {
-	// If the patient count is greater than 0 there has to be at least one
-	// nurse assigned for each shift on that day.
-	// If there is a nurse assigned in any of the shifts there has to be at
-	// least one patient assigned to the room.
-  	context.variables.patientCount >= 1
-  	<==> // <==>
-  	[
-	  	mappings.selectedShiftToRoster->join((s, s))->sum(element.value) == 1
-	  	&
-	  	mappings.selectedShiftToRoster->join((r, r))->filter(element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 1)->sum(element.value) == 1
-		&
-		mappings.selectedShiftToRoster->join((r, r))->filter(element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 2)->sum(element.value) == 1
-  	]
-}
-
-constraint with countPatientsForRoom {
-  	// A room can only be assigned to 1 or 0 nurses for each shift
-  	mappings.selectedShiftToRoster->join((s, s))->sum(element.value) <= 1
-	&
-	mappings.selectedShiftToRoster->join((r, r))->filter(
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 1
-	)->sum(element.value) <= 1
-	&
-	mappings.selectedShiftToRoster->join((r, r))->filter(
-	    element.nodes.vsr.shift.shiftNo == context.nodes.s.shiftNo + 2
-	)->sum(element.value) <= 1
-}
-
 
 //
 // Other Constraints
@@ -547,19 +441,6 @@ constraint with assignedPatientsToRoom {
 	]
 }
 
-// U13: Sets the mapping to true if the nurse is assigned to the workload.
-// Used as primary mapping for the information which nurses are assigned to which workloads of patients.
-// Needed for constraints: U14+U15(S4), U16(S3).
-constraint with assignedNursesToWorkload {
-	context.value == 1
-	<==> // <==>
-	[
-		mappings.assignedPatientsToRoom->join((vsw, vsw))->sum(element.value) == 1
-		&
-		mappings.selectedShiftToRoster->join((vsr, vsr))->sum(element.value) == 1
-	]
-}
-
 // U2: counts how many patients are currently assigned to each room.
 // Needed for constraints: H7, H8.
 constraint with countPatientsForRoom {
@@ -626,62 +507,6 @@ constraint with ageGroupsInRoom {
 
 /* --------------------------------------------------------------------------------------------------------------------- */
 
-// S2: The nurse assigned to a room must have the minimum skill level required by patients in this room.
-function calculateUnqualifiedNurses with assignedPatientsToRoom {
-	context.variables.penalizedSkillDiff
-}
-
-// U11: Sets the mapping variable to the difference in skill level.
-constraint with assignedPatientsToRoom {
-	context.variables.penalizedSkillDiff
-	>=
-	context.value * context.nodes.w.minNurseSkill
-	-
-	mappings.selectedShiftToRoster->join((s, s))->sum(element.value * element.nodes.vsr.roster.nurse.skillLevel)
-}
-
-// U12: calculates the penalized difference between the skill levels. max(0, minLevel - nurseLevel) = max(0, skillDiff).
-constraint with assignedPatientsToRoom {
-	context.variables.penalizedSkillDiff >= 0
-}
-
-/* --------------------------------------------------------------------------------------------------------------------- */
-
-// S3: The number of nurses taking care of a specific patient must be minimized.
-function calculateContinuityOfCare with Patient {
-	mappings.assignedNurseForPatient->join(p)->sum(element.value)
-}
-
-// U16: sets the mapping to true if the nurse is assigned to the patient.
-constraint with assignedNurseForPatient {
-	context.value == 1
-	<==> // <==>
-	mappings.assignedNursesToWorkload->join((n, n), (p, p))->sum(element.value) >= 1
-}
-
-/* --------------------------------------------------------------------------------------------------------------------- */
-
-// S4: The workload of a nurse should not exceed the assigned maximum workload.
-function calculateNurseWorkload with nurseWorkloadForDay {
-	context.variables.excessiveWorkload
-}
-
-// U14: Calculates the sum of the excessive workloads for one roster.
-constraint with nurseWorkloadForDay {
-	context.variables.excessiveWorkload
-	>=
-	mappings.assignedNursesToWorkload->join((ro, ro))->sum(element.value * element.nodes.vsw.workload.workloadValue)
-	-
-	context.nodes.ro.maxWorkload
-}
-
-// U15: Calculates max(0, sumWorkload - nurseMaxWorkload) = max(0, excessiveWorkload).
-constraint with nurseWorkloadForDay {
-	context.variables.excessiveWorkload >= 0
-}
-
-/* --------------------------------------------------------------------------------------------------------------------- */
-
 // S5: The number of OTs opened on each day should be minimized.
 function calculateOpenOTs with Day {
 	mappings.openOTs->filter(element.nodes.c.day == context.number)->sum(element.value)
@@ -738,9 +563,6 @@ function calculateNotAssignedOptionalPatients with optionalPatients {
 objective : min {
 	0
 	+ functions.calculateAgeDifference * types.Weight->sum(element.roomMixedAge)
-	+ functions.calculateUnqualifiedNurses * types.Weight->sum(element.roomNurseSkill)
-	+ functions.calculateContinuityOfCare * types.Weight->sum(element.continuityOfCare)
-	+ functions.calculateNurseWorkload * types.Weight->sum(element.nurseExcessiveWorkload)
 	+ functions.calculateOpenOTs * types.Weight->sum(element.openOperatingTheater)
 	+ functions.calculateOTsPerSurgeon * types.Weight->sum(element.surgeonTransfer)
 	+ functions.calculateWaitTime * types.Weight->sum(element.patientDelay)
