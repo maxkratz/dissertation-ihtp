@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: ihtcvirtualpipelinerunner
+Bundle-SymbolicName: ihtcvirtualpipelinerunner
+Bundle-Version: 1.0.0.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-25
+Automatic-Module-Name: ihtcvirtualpipelinerunner
+Export-Package: org.emoflon.gips.ihtc.virtual.pipeline.runner
+Require-Bundle: ihtcvirtualmetamodel;bundle-version="0.0.1",
+ ihtcvirtualnpa;bundle-version="1.0.0",
+ ihtcvirtualpostprocessing;bundle-version="1.0.0",
+ ihtcvirtualpreprocessing;bundle-version="1.0.0",
+ ihtcvirtualscppra;bundle-version="1.0.0",
+ ihtcvirtualrunner;bundle-version="1.0.0"
