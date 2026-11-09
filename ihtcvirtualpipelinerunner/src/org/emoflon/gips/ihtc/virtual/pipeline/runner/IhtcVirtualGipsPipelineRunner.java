@@ -1,0 +1,539 @@
+package org.emoflon.gips.ihtc.virtual.pipeline.runner;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+
+import org.eclipse.emf.ecore.resource.Resource;
+import org.emoflon.gips.core.api.GipsEngineAPI;
+import org.emoflon.gips.core.util.Observer;
+import org.emoflon.gips.ihtc.virtual.pipeline.runner.utils.XmiSetupUtil;
+import org.emoflon.gips.ihtc.virtual.runner.utils.FileUtils;
+
+import ihtcvirtualmetamodel.Root;
+import ihtcvirtualmetamodel.importexport.ModelToJsonNoPostProcExporter;
+import ihtcvirtualmetamodel.importexport.SolvedModelValidator;
+import ihtcvirtualnpa.api.gips.IhtcvirtualnpaGipsAPI;
+import ihtcvirtualscppra.api.gips.IhtcvirtualscppraGipsAPI;
+
+public class IhtcVirtualGipsPipelineRunner extends AbstractIhtcVirtualGipsPipelineRunner {
+
+	/**
+	 * If true, the runner will print more detailed information.
+	 */
+	private boolean verbose = true;
+
+	/**
+	 * If true, the post processing will be skipped and the JSON output will be
+	 * directly derived from the GIPS solution model (i.e., it will search for
+	 * `isSelected == true` virtual objects.
+	 */
+	private boolean postProc = false;
+
+	/**
+	 * If true, the pre-processing will be executed with the Java-only (i.e., no GT)
+	 * implementation.
+	 */
+	private boolean preProcNoGt = true;
+
+	/**
+	 * If true, the application of the GT rules of the GIPSL specification will only
+	 * be simulated by manually written Java code instead of actually applying GT
+	 * rule matches with eMoflon::IBeX-GT.
+	 */
+	private boolean applicationNoGt = true;
+
+	/**
+	 * If true a timestamp will be added to the filename.
+	 */
+	private boolean saveAllDebugFiles = true;
+
+	/**
+	 * Random seed for the (M)ILP solver.
+	 */
+	private int randomSeed = 0;
+
+	/**
+	 * Time limit for the (M)ILP solver.
+	 */
+	private int solveTimeLimit = -1;
+
+	/**
+	 * Time limit for the GIPS build process.
+	 */
+	private int buildTimeLimit = -1;
+
+	/**
+	 * Number of threads for the (M)ILP solver.
+	 */
+	private int threads = 0;
+
+	/**
+	 * Gurobi callback path.
+	 */
+	private String callbackPath = projectFolder + "/../ihtcvirtualrunner/scripts/callback.json";
+
+	/**
+	 * Gurobi parameter path.
+	 */
+	private String parameterPath = projectFolder + "/../ihtcvirtualrunner/scripts/parameter.json";
+
+	/**
+	 * If true, the removal of redundant/useless constraints will be disabled.
+	 */
+	private boolean disableUselessConstraintRemoval = false;
+
+	/**
+	 * Create a new instance of this class.
+	 */
+	public IhtcVirtualGipsPipelineRunner() {
+	}
+
+	/**
+	 * Main method to execute the runner. Arguments will be ignored.
+	 * 
+	 * @param args Arguments will be ignored.
+	 */
+	public static void main(final String[] args) {
+		Objects.requireNonNull(args);
+
+		final IhtcVirtualGipsPipelineRunner runner = new IhtcVirtualGipsPipelineRunner();
+		runner.setupDefaultPaths();
+		runner.run();
+	}
+
+	/**
+	 * Sets the default paths up.
+	 */
+	void setupDefaultPaths() {
+		// Update output JSON file path
+		this.datasetSolutionFolder = projectFolder + "/../ihtcvirtualmetamodel/resources/runner/";
+		this.outputPath = datasetSolutionFolder + "sol_"
+				+ scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json")) + "_gips.json";
+	}
+
+	@Override
+	protected void run() {
+		checkIfFileExists(inputPath);
+		final Observer observer = new Observer();
+		observer.singleMeasurement("Eval", "TOTAL", () -> {
+			//
+			// Convert JSON input file to XMI file
+			//
+
+			if (verbose) {
+				logger.info("=> Start JSON model loader.");
+			}
+
+			observer.singleMeasurement("Eval", "LOAD_MODEL", () -> {
+				transformJsonToModel(inputPath, instancePath);
+			});
+			logObserverMeasurement("LOAD_MODEL", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// Pre-processing via a separated GT rule set
+			//
+
+			if (verbose) {
+				logger.info("=> Start pre-processing.");
+			}
+
+			observer.singleMeasurement("Eval", "PREPROC", () -> {
+				if (preProcNoGt) {
+					preprocessNoGt(instancePath, preprocessingPath);
+				} else {
+					throw new UnsupportedOperationException();
+//					preprocess(instancePath, preprocessingPath);
+				}
+			});
+			logObserverMeasurement("PREPROC", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// Initialize GIPS API stage 1
+			//
+
+			if (verbose) {
+				logger.info("=> Start GIPS stage 1 init.");
+			}
+
+			final IhtcvirtualscppraGipsAPI gipsApi = observer.singleMeasurement("Eval", "INIT_GIPS", () -> {
+				final IhtcvirtualscppraGipsAPI api = new IhtcvirtualscppraGipsAPI();
+				XmiSetupUtil.checkIfEclipseOrJarSetup(api, preprocessingPath);
+				return api;
+			});
+			logObserverMeasurement("INIT_GIPS", verbose, observer.getStageMeasurements("Eval"));
+
+			// Set GIPS configuration parameters from this object
+			setGipsConfig(gipsApi);
+
+			//
+			// Run GIPS solution stage 1
+			//
+
+			buildAndSolve(gipsApi, verbose, buildTimeLimit);
+
+			//
+			// Apply solution stage 1
+			//
+
+			observer.singleMeasurement("Eval", "SOLUTION_APPLICATION", () -> {
+				if (applicationNoGt) {
+					applySolutionNoGt(gipsApi, verbose);
+				} else {
+					throw new UnsupportedOperationException();
+//					applySolution(gipsApi, verbose);
+				}
+			});
+			logObserverMeasurement("SOLUTION_APPLICATION", verbose, observer.getStageMeasurements("Eval"));
+
+//			// Print variable statistics for all mappers
+//			if (verbose) {
+//				logger.info("=> Print variable statistics (estimation): ");
+//				int totalVars = 0;
+//
+//				// GT rule-based mappings
+//				totalVars += logVarStats(gipsApi.getSelectedShiftToFirstWorkload());
+//				totalVars += logVarStats(gipsApi.getSelectedExtendingShiftToWorkload());
+//				totalVars += logVarStats(gipsApi.getSelectedOccupantNodes());
+//				totalVars += logVarStats(gipsApi.getSelectedOperationDay());
+//				totalVars += logVarStats(gipsApi.getSelectedShiftToRoster());
+//
+//				// utility mappings
+//				totalVars += logVarStats(gipsApi.getCountPatientsForRoom());
+//				totalVars += logVarStats(gipsApi.getAssignedPatientsToRoom());
+//				totalVars += logVarStats(gipsApi.getAssignedGenderToRoomOnShift());
+//				totalVars += logVarStats(gipsApi.getOpenOTs());
+//				totalVars += logVarStats(gipsApi.getSurgeonInOT());
+//				totalVars += logVarStats(gipsApi.getSurgeonPenalizedOTs());
+//				totalVars += logVarStats(gipsApi.getAgeGroupsInRoom());
+//				totalVars += logVarStats(gipsApi.getAssignedNursesToWorkload());
+//				totalVars += logVarStats(gipsApi.getNurseWorkloadForDay());
+//				totalVars += logVarStats(gipsApi.getAssignedNurseForPatient());
+//
+//				logger.info("Total estimated number of variables: " + totalVars);
+//			}
+
+			//
+			// GIPS save stage 1
+			//
+
+			observer.singleMeasurement("Eval", "GIPS_SAVE", () -> {
+				gipsSave(gipsApi, gipsTmpPath);
+			});
+			logObserverMeasurement("GIPS_SAVE", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// Initialize GIPS API stage 2
+			//
+
+			if (verbose) {
+				logger.info("=> Start GIPS stage 2 init.");
+			}
+
+			final IhtcvirtualnpaGipsAPI gipsApiNpa = observer.singleMeasurement("Eval", "INIT_GIPS", () -> {
+				final IhtcvirtualnpaGipsAPI api = new IhtcvirtualnpaGipsAPI();
+				XmiSetupUtil.checkIfEclipseOrJarSetup(api, gipsTmpPath);
+				return api;
+			});
+			logObserverMeasurement("INIT_GIPS", verbose, observer.getStageMeasurements("Eval"));
+
+			// Set GIPS configuration parameters from this object
+			setGipsConfig(gipsApiNpa);
+
+			//
+			// Run GIPS solution stage 2
+			//
+
+			buildAndSolve(gipsApiNpa, verbose, buildTimeLimit);
+
+			//
+			// Apply solution stage 2
+			//
+
+			observer.singleMeasurement("Eval", "SOLUTION_APPLICATION", () -> {
+				if (applicationNoGt) {
+					applySolutionNoGt(gipsApiNpa, verbose);
+				} else {
+					throw new UnsupportedOperationException();
+//					applySolution(gipsApi, verbose);
+				}
+			});
+			logObserverMeasurement("SOLUTION_APPLICATION", verbose, observer.getStageMeasurements("Eval"));
+
+//			// Print variable statistics for all mappers
+//			if (verbose) {
+//				logger.info("=> Print variable statistics (estimation): ");
+//				int totalVars = 0;
+//
+//				// GT rule-based mappings
+//				totalVars += logVarStats(gipsApi.getSelectedShiftToFirstWorkload());
+//				totalVars += logVarStats(gipsApi.getSelectedExtendingShiftToWorkload());
+//				totalVars += logVarStats(gipsApi.getSelectedOccupantNodes());
+//				totalVars += logVarStats(gipsApi.getSelectedOperationDay());
+//				totalVars += logVarStats(gipsApi.getSelectedShiftToRoster());
+//
+//				// utility mappings
+//				totalVars += logVarStats(gipsApi.getCountPatientsForRoom());
+//				totalVars += logVarStats(gipsApi.getAssignedPatientsToRoom());
+//				totalVars += logVarStats(gipsApi.getAssignedGenderToRoomOnShift());
+//				totalVars += logVarStats(gipsApi.getOpenOTs());
+//				totalVars += logVarStats(gipsApi.getSurgeonInOT());
+//				totalVars += logVarStats(gipsApi.getSurgeonPenalizedOTs());
+//				totalVars += logVarStats(gipsApi.getAgeGroupsInRoom());
+//				totalVars += logVarStats(gipsApi.getAssignedNursesToWorkload());
+//				totalVars += logVarStats(gipsApi.getNurseWorkloadForDay());
+//				totalVars += logVarStats(gipsApi.getAssignedNurseForPatient());
+//
+//				logger.info("Total estimated number of variables: " + totalVars);
+//			}
+
+			//
+			// GIPS save stage 2
+			//
+
+			observer.singleMeasurement("Eval", "GIPS_SAVE", () -> {
+				gipsSave(gipsApiNpa, gipsOutputPath);
+			});
+			logObserverMeasurement("GIPS_SAVE", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// Model Validation
+			//
+
+			if (verbose) {
+				logger.info("=> Start Model Validation");
+			}
+
+			observer.singleMeasurement("Eval", "MODEL_VALIDATE", () -> {
+				validateModel(gipsOutputPath);
+			});
+			logObserverMeasurement("MODEL_VALIDATE", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// Export
+			//
+
+			if (verbose) {
+				logger.info("=> Start JSON export.");
+			}
+
+			observer.singleMeasurement("Eval", "EXPORT", () -> {
+				if (postProc) {
+					throw new UnsupportedOperationException();
+//					observer.singleMeasurement("Eval", "POSTPROC", () -> {
+//						if (verbose) {
+//							logger.info("=> Start post-processing GT.");
+//						}
+//						postprocess(gipsOutputPath, postProcOutputPath);
+//					});
+//					logObserverMeasurement("POSTPROC", verbose, observer.getStageMeasurements("Eval"));
+//					exportToJson(postProcOutputPath, outputPath);
+				} else {
+					if (verbose) {
+						logger.info("=> Skipped post-processing GT.");
+					}
+					exportToJsonNoPostProc(gipsOutputPath, outputPath);
+				}
+			});
+			logObserverMeasurement("EXPORT", verbose, observer.getStageMeasurements("Eval"));
+
+			//
+			// The end
+			//
+
+			gipsApi.terminate();
+		});
+		logObserverMeasurement("TOTAL", verbose, observer.getStageMeasurements("Eval"));
+	}
+
+//	/**
+//	 * Prints the estimated number of variables to be created by the given GIPS
+//	 * mapper.
+//	 * 
+//	 * @param mapper GIPS mapper to print the estimates number of variables for.
+//	 * @return Returns the total estimated number of variables.
+//	 */
+//	private int logVarStats(final GipsMapper<?> mapper) {
+//		Objects.requireNonNull(mapper);
+//		final int implicitVars = mapper.getMappings().size();
+//		logger.info(mapper.getMapping().getName() + ": " + implicitVars);
+//		final int additionalVars = mapper.getMapping().getFreeVariables().size();
+//		if (additionalVars > 0) {
+//			logger.info(mapper.getMapping().getName() + "_additional" + ": " + additionalVars * implicitVars);
+//		}
+//		return implicitVars + (additionalVars * implicitVars);
+//	}
+
+	/**
+	 * Takes a XMI output path (of a GIPS-generated solution model) and validates
+	 * the model
+	 * 
+	 * @param gipsOutputPath
+	 */
+	private void validateModel(final String gipsOutputPath) {
+		Objects.requireNonNull(gipsOutputPath);
+		Objects.requireNonNull(debugOutputPath);
+		final Resource loadedResource = FileUtils.loadModel(gipsOutputPath);
+		final Root solvedHospital = (Root) loadedResource.getContents().get(0);
+		final SolvedModelValidator validator = new SolvedModelValidator(solvedHospital, verbose);
+		if (saveAllDebugFiles) {
+			LocalDateTime now = LocalDateTime.now();
+			String formatted = now.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+			String debugOutputPathTimeStamp = debugOutputPath.substring(0, debugOutputPath.lastIndexOf(".txt")) + "_"
+					+ formatted + ".txt";
+			validator.validate(debugOutputPathTimeStamp);
+		} else {
+			validator.validate(debugOutputPath);
+		}
+	}
+
+//	/**
+//	 * Takes an XMI output path (of a GIPS-generated solution model) and writes the
+//	 * corresponding JSON output to `jsonOutputPath`.
+//	 * 
+//	 * @param xmiOutputPath  GIPS-generated solution model to convert.
+//	 * @param jsonOutputPath JSON output file location to write the JSON output file
+//	 *                       to.
+//	 */
+//	private void exportToJson(final String xmiOutputPath, final String jsonOutputPath) {
+//		Objects.requireNonNull(xmiOutputPath);
+//		Objects.requireNonNull(jsonOutputPath);
+//
+//		final Resource loadedResource = FileUtils.loadModel(xmiOutputPath);
+//		final Root solvedHospital = (Root) loadedResource.getContents().get(0);
+//		final ModelToJsonExporter exporter = new ModelToJsonExporter(solvedHospital);
+//		logger.info("Writing output JSON file to: " + outputPath);
+//		exporter.modelToJson(jsonOutputPath, verbose);
+//	}
+
+	/**
+	 * Takes an XMI output path (of a GIPS-generated solution model) and writes the
+	 * corresponding JSON output to `jsonOutputPath`. This method relies on the
+	 * non-post-processed model.
+	 * 
+	 * @param xmiOutputPath  GIPS-generated solution model to convert.
+	 * @param jsonOutputPath JSON output file location to write the JSON output file
+	 *                       to.
+	 */
+	private void exportToJsonNoPostProc(final String xmiOutputPath, final String jsonOutputPath) {
+		Objects.requireNonNull(xmiOutputPath);
+		Objects.requireNonNull(jsonOutputPath);
+
+		final Resource loadedResource = FileUtils.loadModel(xmiOutputPath);
+		final Root solvedHospital = (Root) loadedResource.getContents().get(0);
+		final ModelToJsonNoPostProcExporter exporter = new ModelToJsonNoPostProcExporter(solvedHospital);
+		logger.info("Writing output JSON file to: " + outputPath);
+		exporter.modelToJson(jsonOutputPath, verbose);
+	}
+
+	/**
+	 * Sets the verbose flag to the given value.
+	 * 
+	 * @param verbose Verbose flag value.
+	 */
+	public void setVerbose(final boolean verbose) {
+		this.verbose = verbose;
+	}
+
+	/**
+	 * Sets the random seed to the given value.
+	 * 
+	 * @param seed Random seed to set.
+	 */
+	public void setRandomSeed(final int seed) {
+		this.randomSeed = seed;
+	}
+
+	/**
+	 * Sets the (M)ILP solver time limit to the given value.
+	 * 
+	 * @param timeLimit Time limit to set.
+	 */
+	public void setSolveTimeLimit(final int timeLimit) {
+		this.solveTimeLimit = timeLimit;
+	}
+
+	/**
+	 * Sets the GIPS build time limit to the given value.
+	 * 
+	 * @param timeLimit Time limit to set.
+	 */
+	public void setBuildTimeLimit(final int timeLimit) {
+		this.buildTimeLimit = timeLimit;
+	}
+
+	/**
+	 * Sets the number of threads to be used by the (M)ILP solver.
+	 * 
+	 * @param threads Number of threads to set.
+	 */
+	public void setThreads(final int threads) {
+		this.threads = threads;
+	}
+
+	/**
+	 * Sets the Gurobi callback path to the given value.
+	 * 
+	 * @param callbackPath Gurobi callback path to set.
+	 */
+	public void setCallbackPath(final String callbackPath) {
+		Objects.requireNonNull(callbackPath);
+		this.callbackPath = callbackPath;
+	}
+
+	/**
+	 * Sets the Gurobi parameter path to the given value.
+	 * 
+	 * @param parameterPath Gurobi parameter path to set.
+	 */
+	public void setParameterPath(final String parameterPath) {
+		Objects.requireNonNull(parameterPath);
+		this.parameterPath = parameterPath;
+	}
+
+	/**
+	 * Sets the pre-processing approach to the given value.
+	 * 
+	 * @param noGt If true, the Java-based pre-processing will be used.
+	 */
+	public void setPreProcessingApproach(final boolean noGt) {
+		this.preProcNoGt = noGt;
+	}
+
+	/**
+	 * Sets the private GIPS API configuration parameters from this object to the
+	 * actual GIPS API.
+	 * 
+	 * @param gipsApi GIPS API to set the configuration parameters for.
+	 */
+	private void setGipsConfig(final GipsEngineAPI<?, ?> gipsApi) {
+		Objects.requireNonNull(gipsApi);
+
+		gipsApi.getSolverConfig().setRandomSeed(randomSeed);
+		if (solveTimeLimit != -1) {
+			gipsApi.getSolverConfig().setTimeLimit(solveTimeLimit);
+		}
+		gipsApi.getSolverConfig().setThreadCount(threads);
+		if (callbackPath != null) {
+			gipsApi.getSolverConfig().setEnableCallbackPath(true);
+			gipsApi.getSolverConfig().setCallbackPath(callbackPath);
+		}
+		if (parameterPath != null) {
+			gipsApi.getSolverConfig().setParameterPath(parameterPath);
+		}
+		gipsApi.getSolverConfig().setEnableOutput(verbose);
+		gipsApi.getConfig().setPrintUselessConstraintsStats(true);
+		gipsApi.getConfig().setUselessDuplicateConstraints(!disableUselessConstraintRemoval);
+	}
+
+	/**
+	 * Sets the disabling of redundant/useless constraints to the given value.
+	 * 
+	 * @param disable If true, the removal of redundant/useless constraints will be
+	 *                disabled.
+	 */
+	public void setDisableUselessConstraintRemoval(final boolean disable) {
+		this.disableUselessConstraintRemoval = disable;
+	}
+
+}

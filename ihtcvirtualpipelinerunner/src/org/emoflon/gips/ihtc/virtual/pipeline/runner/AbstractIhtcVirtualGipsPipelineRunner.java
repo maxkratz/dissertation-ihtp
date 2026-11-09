@@ -85,6 +85,11 @@ public abstract class AbstractIhtcVirtualGipsPipelineRunner {
 	 * Default instance solved XMI path.
 	 */
 	public String gipsOutputPath;
+	
+	/**
+	 * Default instance temporary XMI path.
+	 */
+	public String gipsTmpPath;
 
 	/**
 	 * Default post-processing output XMI path.
@@ -139,6 +144,8 @@ public abstract class AbstractIhtcVirtualGipsPipelineRunner {
 		instancePath = instanceFolder + scenarioFileName.replace(".json", ".xmi");
 		gipsOutputPath = instanceFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
 				+ "_solved.xmi";
+		gipsTmpPath = instanceFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
+		+ "_tmp.xmi";
 		outputPath = datasetSolutionFolder + "sol_"
 				+ scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json")) + "_gips.json";
 		debugOutputPath = debugFolder + scenarioFileName.substring(0, scenarioFileName.lastIndexOf(".json"))
