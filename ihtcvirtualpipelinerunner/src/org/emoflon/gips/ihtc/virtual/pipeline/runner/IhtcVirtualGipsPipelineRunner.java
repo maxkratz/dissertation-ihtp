@@ -113,7 +113,7 @@ public class IhtcVirtualGipsPipelineRunner extends AbstractIhtcVirtualGipsPipeli
 	}
 
 	@Override
-	protected void run() {
+	public void run() {
 		checkIfFileExists(inputPath);
 		final Observer observer = new Observer();
 		observer.singleMeasurement("Eval", "TOTAL", () -> {
