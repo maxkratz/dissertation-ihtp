@@ -220,6 +220,12 @@ public class IhtcVirtualGipsPipelineRunner extends AbstractIhtcVirtualGipsPipeli
 				gipsSave(gipsApi, gipsTmpPath);
 			});
 			logObserverMeasurement("GIPS_SAVE", verbose, observer.getStageMeasurements("Eval"));
+			
+			//
+			// The end stage 1
+			//
+			
+			gipsApi.terminate();
 
 			//
 			// Initialize GIPS API stage 2
@@ -337,10 +343,10 @@ public class IhtcVirtualGipsPipelineRunner extends AbstractIhtcVirtualGipsPipeli
 			logObserverMeasurement("EXPORT", verbose, observer.getStageMeasurements("Eval"));
 
 			//
-			// The end
+			// The end stage 2
 			//
 
-			gipsApi.terminate();
+			gipsApiNpa.terminate();
 		});
 		logObserverMeasurement("TOTAL", verbose, observer.getStageMeasurements("Eval"));
 	}

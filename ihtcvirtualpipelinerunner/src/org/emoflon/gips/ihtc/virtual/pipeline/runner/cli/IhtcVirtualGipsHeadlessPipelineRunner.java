@@ -53,6 +53,10 @@ public class IhtcVirtualGipsHeadlessPipelineRunner {
 		configureLogging();
 		final CliConfig config = parseArgs(args);
 		new IhtcVirtualGipsHeadlessPipelineRunner().execute(config);
+
+		// Terminate the JVM. I do not know why it is necessary for this runner, but,
+		// otherwise, the JVM hangs on exit.
+//		System.exit(0);
 	}
 
 	/**
