@@ -121,6 +121,10 @@ mapping nurseWorkloadForDay to nurseRosterTuple {
 
 mapping assignedNurseForPatient to nursePatientTuple;
 
+// Exploiting the mapping indexer for faster build times
+mapping patientAssignedToRoomMI to patientAssignedToRoom;
+
+
 //
 // Hard Constraints
 //
@@ -148,7 +152,8 @@ constraint with assignedNursesToWorkload {
 	context.value == 1
 	<==> // <==>
 	[
-		patterns.patientAssignedToRoom->join((vsw, vsw))->sum(1) == 1
+//		patterns.patientAssignedToRoom->join((vsw, vsw))->sum(1) == 1
+		mappings.patientAssignedToRoomMI->join((vsw, vsw))->sum(1) == 1
 		&
 		mappings.selectedShiftToRoster->join((vsr, vsr))->sum(element.value) == 1
 	]
