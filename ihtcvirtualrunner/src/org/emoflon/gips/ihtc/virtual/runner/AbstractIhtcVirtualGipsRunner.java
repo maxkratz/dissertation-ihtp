@@ -371,15 +371,18 @@ public abstract class AbstractIhtcVirtualGipsRunner {
 		gipsApi.getSelectedOperationDay().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getVopc().setIsSelected(true);
 			m.getMatch().getVwc().setIsSelected(true);
+			m.getMatch().getVwop().setIsSelected(true);
 		});
 		gipsApi.getSelectedShiftToRoster().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getVsr().setIsSelected(true);
 		});
 		gipsApi.getSelectedShiftToFirstWorkload().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getVsw().setIsSelected(true);
+			// m.getMatch().getVwc() is context
 		});
 		gipsApi.getSelectedExtendingShiftToWorkload().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getNextvsw().setIsSelected(true);
+			// m.getMatch().getPrevvsw() is context
 		});
 		gipsApi.getSelectedOccupantNodes().getNonZeroVariableMappings().forEach(m -> {
 			m.getMatch().getVsw().setIsSelected(true);
